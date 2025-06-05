@@ -32,6 +32,13 @@ def list_requests():
         jobs=jobs
     )
 
+@admin_bp.route("/requests/<int:req_id>/delete", methods=["POST"])
+def delete_request(req_id):
+    req = Request.query.get_or_404(req_id)
+    db.session.delete(req)
+    db.session.commit()
+    flash(f"Request #{req_id} deleted.", "danger")
+    return redirect(url_for("admin.list_requests"))
 
 
 @admin_bp.route("/requests/<int:req_id>")
