@@ -23,6 +23,7 @@
           <th>Items</th>
           <th>Status</th>
           <th>Assign Job</th>
+          <th>Delete</th> <!-- NEW COLUMN -->
         </tr>
       </thead>
       <tbody>
@@ -31,7 +32,6 @@
           <td>{{ r.id }}</td>
           <td>{{ r.employee_name }} ({{ r.employee_id }})</td>
 
-          <!-- Job Name with link if attached -->
           <td>
             {% if r.job_id %}
               <a href="{{ url_for('admin.job_detail', job_id=r.job_id) }}">
@@ -42,7 +42,6 @@
             {% endif %}
           </td>
 
-          <!-- Job Number -->
           <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
 
           <td>{{ r.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
@@ -55,7 +54,6 @@
             </ul>
           </td>
 
-          <!-- Status selector -->
           <td>
             <form method="post"
                   action="{{ url_for('admin.update_status', req_id=r.id) }}">
@@ -82,7 +80,6 @@
             </form>
           </td>
 
-          <!-- Assign to job dropdown -->
           <td>
             <form method="post"
                   action="{{ url_for('admin.assign_request', req_id=r.id) }}">
@@ -100,6 +97,16 @@
               </select>
             </form>
           </td>
+
+          <!-- DELETE BUTTON -->
+          <td>
+            <form method="post"
+                  action="{{ url_for('admin.delete_request', req_id=r.id) }}"
+                  onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -107,3 +114,4 @@
   </div>
 </div>
 {% endblock %}
+
