@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Archived Jobs & Audit{% endblock %}
+
+{% block admin_content %}
+<h2>Archived Jobs</h2>
+
+{% for job in jobs %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <strong>{{ job.name }} ({{ job.number }})</strong>
+      — {{ job.start_date }} to {{ job.end_date }},
+      Manager: {{ job.manager }}
+    </div>
+    <div class="card-body">
+      <!-- Requests -->
+      <h5>Requests</h5>
+      <ul class="list-group mb-3">
+        {% for req in job.requests %}
+        <li class="list-group-item">
+          #{{ req.id }} by {{ req.employee_name }} —
+          {{ req.status }} —
+          submitted {{ req.submitted_at.strftime('%Y-%m-%d %H:%M') }}
+          <ul class="mt-2 mb-0">
+            {% for it in req.items %}
+            <li>{{ it.quantity }}× {{ it.item_name }}</li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No requests recorded.</li>
+        {% endfor %}
+      </ul>
+
+      <!-- Asset assignment history -->
+      <h5>Asset History</h5>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Asset</th>
+            <th>Assigned At</th>
+            <th>Unassigned At</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for aa in job.asset_assignments %}
+          <tr>
+            <td>
+              {{ aa.asset.type }} —
+              {{ aa.asset.identifier }}
+            </td>
+            <td>{{ aa.assigned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              {{ aa.unassigned_at 
+                   and aa.unassigned_at.strftime('%Y-%m-%d %H:%M')
+                   or '—' }}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-muted text-center">
+              No asset history.
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted">No archived jobs yet.</p>
+{% endfor %}
+{% endblock %}

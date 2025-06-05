@@ -1,0 +1,92 @@
+<table id="jobs-table" class="table table-striped">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Number</th>
+      <th>Start–End</th>
+      <th>Manager</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for job in jobs %}
+    <tr>
+      <td>{{ job.id }}</td>
+      <td>{{ job.name }}</td>
+      <td>{{ job.number }}</td>
+      <td>
+        {{ job.start_date.strftime('%Y-%m-%d') }}
+         – {{ job.end_date.strftime('%Y-%m-%d') }}
+      </td>
+      <td>{{ job.manager }}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="collapse"
+                data-bs-target="#details-{{ job.id }}">
+          Details
+        </button>
+      </td>
+    </tr>
+    <tr class="collapse" id="details-{{ job.id }}">
+      <td colspan="6" class="p-0">
+        <div class="accordion" id="acc-{{ job.id }}">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#assets-{{ job.id }}">
+                Assigned Assets
+              </button>
+            </h2>
+            <div id="assets-{{ job.id }}" class="accordion-collapse collapse"
+                 data-bs-parent="#acc-{{ job.id }}">
+              <div class="accordion-body">
+                {% if job.assets %}
+                  <ul class="list-group">
+                    {% for a in job.assets %}
+                    <li class="list-group-item">
+                      {{ a.type }} — {{ a.identifier }}
+                    </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <em>No assets assigned.</em>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#reqs-{{ job.id }}">
+                Requests
+              </button>
+            </h2>
+            <div id="reqs-{{ job.id }}" class="accordion-collapse collapse"
+                 data-bs-parent="#acc-{{ job.id }}">
+              <div class="accordion-body">
+                {% if job.requests %}
+                  <ul class="list-group">
+                    {% for r in job.requests %}
+                    <li class="list-group-item">
+                      #{{ r.id }} from {{ r.employee_name }} —
+                      {{ r.items|length }} items
+                    </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <em>No requests yet.</em>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

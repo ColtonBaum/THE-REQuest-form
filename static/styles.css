@@ -1,0 +1,52 @@
+/* styles.css */
+
+/* 1. Body background & base font */
+body {
+    background-color: #f8f9fa;  /* light gray behind your cards */
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  
+  /* 2. Card tweaks */
+  .card {
+    border: none;           /* remove default border */
+    border-radius: 0.5rem;  /* slightly more rounded corners */
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+  }
+  
+  /* 3. Form labels */
+  .form-label {
+    font-weight: 600;       /* make labels stand out */
+  }
+  
+  /* 4. Button adjustments */
+  .btn-primary {
+    border-radius: 2rem;     /* pill-shaped buttons */
+    padding: 0.5rem 1.5rem;
+  }
+  .btn-outline-secondary {
+    border-radius: 2rem;
+  }
+  
+  /* 5. Input focus state */
+  .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); /* match Bootstrap primary color */
+  }
+  
+  /* 6. Navbar brand */
+  .navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  /* 7. Responsive tweaks */
+  @media (max-width: 576px) {
+    .card {
+      margin: 0 0.5rem;  /* add side padding on mobile */
+    }
+  }
+  
+  /* 8. Optional: highlight required fields */
+  input[required] {
+    border-left: 3px solid #dc3545;  /* red bar on the left */
+  }
+  

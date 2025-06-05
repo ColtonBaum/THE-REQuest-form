@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Request #{{ req.id }} Details{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+  <h3>Request #{{ req.id }} Details</h3>
+
+  <p>
+    <strong>Employee:</strong> {{ req.employee_name }}<br>
+    <strong>Job:</strong>
+    {% if req.job %}
+      <a href="{{ url_for('admin.job_detail', job_id=req.job.id) }}">
+        {{ req.job.name }} ({{ req.job.number }})
+      </a>
+    {% else %}
+      {{ req.job_name }} ({{ req.job_number }})
+    {% endif %}<br>
+    <strong>Submitted at:</strong> {{ req.submitted_at.strftime("%Y-%m-%d %H:%M") }}<br>
+    <strong>Need by:</strong> {{ req.need_by_date }}
+  </p>
+
+  <h5 class="mt-4">Items in this request</h5>
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in req.items %}
+      <tr>
+        <td>{{ item.item_name }}</td>
+        <td>{{ item.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <a href="{{ request.referrer or url_for('admin.jobs_list') }}"
+     class="btn btn-secondary mt-3">
+    ← Back
+  </a>
+</div>
+{% endblock %}

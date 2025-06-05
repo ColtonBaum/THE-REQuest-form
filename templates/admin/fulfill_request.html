@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Fulfill Request #{{ request.id }}{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+  <h3>Request #{{ request.id }}</h3>
+  <p>
+    <strong>Employee:</strong> {{ request.employee_name }}<br>
+    <strong>Need by:</strong> {{ request.need_by_date }}
+  </p>
+
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in request.items %}
+      <tr>
+        <td>{{ item.item_name }}</td>
+        <td>{{ item.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="mt-3">
+    <a href="{{ url_for('admin.job_detail', job_id=request.job_id) }}#requests"
+       class="btn btn-secondary">
+      ← Go Back
+    </a>
+  </div>
+</div>
+{% endblock %}

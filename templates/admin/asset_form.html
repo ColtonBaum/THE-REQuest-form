@@ -1,0 +1,39 @@
+{% extends "admin/base.html" %}
+
+{% block title %}
+  {% if asset %}Edit Asset{% else %}New Asset{% endif %}
+{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+  <h2>{{ "Edit Asset" if asset else "New Asset" }}</h2>
+  <form method="post">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+      {{ form.group.label(class="form-label") }}
+      {{ form.group(class="form-select") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.type.label(class="form-label") }}
+      {{ form.type(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.identifier.label(class="form-label") }}
+      {{ form.identifier(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.serial_number.label(class="form-label") }}
+      {{ form.serial_number(class="form-control") }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">
+      {{ "Save" if asset else "Create" }}
+    </button>
+    <a href="{{ url_for('admin.assets_list') }}" class="btn btn-secondary ms-2">Cancel</a>
+  </form>
+</div>
+{% endblock %}

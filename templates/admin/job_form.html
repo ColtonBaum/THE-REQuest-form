@@ -1,0 +1,60 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Edit Job' if job else 'New Job' }}{% endblock %}
+
+{% block admin_content %}
+<div class="container py-4">
+  <h2>{{ 'Edit Job' if job else 'New Job' }}</h2>
+
+  {# Display validation errors #}
+  {% if form.errors %}
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      {% for field, errors in form.errors.items() %}
+        {% for error in errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="name" class="form-label">Job Name</label>
+        {{ form.name(class="form-control", id="name") }}
+      </div>
+      <div class="col-md-6">
+        <label for="number" class="form-label">Job Number</label>
+        {{ form.number(class="form-control", id="number") }}
+      </div>
+      <div class="col-md-6">
+        <label for="location" class="form-label">Location</label>
+        {{ form.location(class="form-control", id="location") }}
+      </div>
+      <div class="col-md-3">
+        <label for="start_date" class="form-label">Start Date</label>
+        {{ form.start_date(class="form-control", id="start_date") }}
+      </div>
+      <div class="col-md-3">
+        <label for="end_date" class="form-label">End Date</label>
+        {{ form.end_date(class="form-control", id="end_date") }}
+      </div>
+      <div class="col-md-6">
+        <label for="manager" class="form-label">Project Manager</label>
+        {{ form.manager(class="form-select", id="manager") }}
+      </div>
+      <div class="col-md-6">
+        <label for="budget" class="form-label">Budget</label>
+        {{ form.budget(class="form-control", id="budget") }}
+      </div>
+    </div>
+    <div class="mt-4">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="{{ url_for('admin.jobs_list') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

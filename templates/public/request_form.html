@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Submit Request{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="card mx-auto" style="max-width:600px;">
+    <div class="card-body">
+      <h4 class="card-title text-center mb-4">Tooling/Trailer Request</h4>
+      <form method="post">
+        {{ form.hidden_tag() }}
+        <!-- Your new inputs -->
+        <div class="mb-3">
+          {{ form.employee_name.label }}
+          {{ form.employee_name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+          {{ form.job_name.label }}
+          {{ form.job_name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+          {{ form.job_number.label }}
+          {{ form.job_number(class="form-control") }}
+        </div>
+        <div class="mb-3">
+          {{ form.need_by_date.label }}
+          {{ form.need_by_date(class="form-control", type="date") }}
+        </div>
+
+        <h5 class="mt-4">Items</h5>
+        <div id="items">
+          {% for subform in form.items %}
+          <div class="row align-items-end mb-2">
+            <div class="col">
+              {{ subform.item_name.label }}
+              {{ subform.item_name(class="form-control") }}
+            </div>
+            <div class="col-3">
+              {{ subform.quantity.label }}
+              {{ subform.quantity(class="form-control") }}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" id="add-item" class="btn btn-sm btn-outline-secondary">+ Add another item</button>
+
+        <div class="text-center mt-4">
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Clone the first item row, reset its inputs, and append
+document.getElementById('add-item').onclick = () => {
+  const itemsDiv = document.getElementById('items');
+  const idx = itemsDiv.children.length;
+  const newRow = itemsDiv.children[0].cloneNode(true);
+  newRow.querySelectorAll('input').forEach(i => {
+    i.name = i.name.replace(/\d+/, idx);
+    i.value = '';
+  });
+  itemsDiv.appendChild(newRow);
+};
+</script>
+{% endblock %}
