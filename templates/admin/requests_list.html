@@ -12,13 +12,14 @@
 
   <div class="card shadow-sm">
     <div class="card-body table-responsive">
-      <table id="requests-table" class="table table-bordered align-middle" style="background-color: #f2f2f2;">
-        <thead class="table-dark">
+      <table id="requests-table" class="table table-bordered align-middle" style="background-color: #eaeaea;">
+        <thead class="table-primary text-dark">
           <tr>
             <th>ID</th>
             <th>Name (ID)</th>
             <th>Job Name</th>
             <th>Job Number</th>
+            <th>Need By</th>
             <th>Submitted</th>
             <th>Items</th>
             <th>Status</th>
@@ -31,7 +32,6 @@
           <tr>
             <td>{{ r.id }}</td>
             <td>{{ r.employee_name }} ({{ r.employee_id }})</td>
-
             <td>
               {% if r.job_id %}
                 <a href="{{ url_for('admin.job_detail', job_id=r.job_id) }}">
@@ -41,10 +41,9 @@
                 —
               {% endif %}
             </td>
-
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
+            <td>{{ r.need_by_date }}</td>
             <td>{{ r.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
-
             <td class="px-3">
               <ul class="mb-0 ps-3">
                 {% for i in r.items %}
@@ -52,18 +51,21 @@
                 {% endfor %}
               </ul>
             </td>
-
             <td>
               <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="status" class="form-select form-select-sm {% if r.status=='Not started' %}bg-danger text-white{% elif r.status=='In progress' %}bg-warning text-dark{% elif r.status=='Complete' %}bg-success text-white{% endif %}" onchange="this.form.submit()">
+                <select name="status" class="form-select form-select-sm
+                    {% if r.status=='Not started' %}bg-danger text-white
+                    {% elif r.status=='In progress' %}bg-warning text-dark
+                    {% elif r.status=='Complete' %}bg-success text-white
+                    {% endif %}"
+                  onchange="this.form.submit()">
                   <option value="Not started" {% if r.status=='Not started' %}selected{% endif %}>Not started</option>
                   <option value="In progress" {% if r.status=='In progress' %}selected{% endif %}>In progress</option>
                   <option value="Complete" {% if r.status=='Complete' %}selected{% endif %}>Complete</option>
                 </select>
               </form>
             </td>
-
             <td>
               <form method="post" action="{{ url_for('admin.assign_request', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -75,9 +77,8 @@
                 </select>
               </form>
             </td>
-
             <td class="text-nowrap">
-              <a href="{{ url_for('admin.edit_request', req_id=r.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+              <a href="{{ url_for('admin.edit_request', req_id=r.id) }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
               <form method="post" action="{{ url_for('admin.delete_request', req_id=r.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
@@ -90,7 +91,6 @@
     </div>
   </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
@@ -104,8 +104,8 @@
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
       language: {
         paginate: {
-          previous: '<span class="btn btn-sm btn-outline-primary">Previous</span>',
-          next: '<span class="btn btn-sm btn-outline-primary">Next</span>'
+          previous: '<span class="btn btn-sm btn-outline-primary bg-white text-primary me-2">Previous</span>',
+          next: '<span class="btn btn-sm btn-outline-primary bg-white text-primary ms-2">Next</span>'
         }
       }
     });
