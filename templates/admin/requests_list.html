@@ -23,7 +23,7 @@
           <th>Items</th>
           <th>Status</th>
           <th>Assign Job</th>
-          <th>Delete</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -88,7 +88,8 @@
             </form>
           </td>
 
-          <td>
+          <td class="d-flex gap-2">
+            <a href="{{ url_for('admin.edit_request', req_id=r.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
             <form method="post"
                   action="{{ url_for('admin.delete_request', req_id=r.id) }}"
                   onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
