@@ -1,143 +1,128 @@
 {% extends "admin/base.html" %}
-{% block title %}Requests{% endblock %}
+
+{% block title %}All Requests{% endblock %}
 
 {% block admin_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3>All Requests</h3>
-</div>
-
-<div class="row">
-  <div class="col-md-6">
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-primary text-white">
-        Active Requests
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table id="active-requests-table" class="table table-bordered table-striped align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Employee</th>
-                <th>Job</th>
-                <th>Items</th>
-                <th>Need By</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for req in requests if req.status != 'Complete' %}
-              <tr>
-                <td>{{ req.id }}</td>
-                <td>{{ req.employee_name }}</td>
-                <td>{{ req.job_name }} ({{ req.job_number }})</td>
-                <td>
-                  <ul class="mb-0">
-                    {% for item in req.items %}
-                      <li>{{ item.item_name }} × {{ item.quantity }}</li>
-                    {% endfor %}
-                  </ul>
-                </td>
-                <td>{{ req.need_by_date }}</td>
-                <td>{{ req.status }}</td>
-                <td>
-                  <a href="{{ url_for('admin.edit_request', req_id=req.id) }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
-                  <form method="post" action="{{ url_for('admin.delete_request', req_id=req.id) }}" style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>All Requests</h3>
+    <a href="{{ url_for('admin.export_csv') }}" class="btn btn-sm btn-outline-success">Export CSV</a>
   </div>
 
-  <div class="col-md-6">
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-secondary text-white">
-        Completed Requests
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table id="completed-requests-table" class="table table-bordered table-striped align-middle">
-            <thead class="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Employee</th>
-                <th>Job</th>
-                <th>Items</th>
-                <th>Completed</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for req in requests if req.status == 'Complete' %}
-              <tr>
-                <td>{{ req.id }}</td>
-                <td>{{ req.employee_name }}</td>
-                <td>{{ req.job_name }} ({{ req.job_number }})</td>
-                <td>
-                  <ul class="mb-0">
-                    {% for item in req.items %}
-                      <li>{{ item.item_name }} × {{ item.quantity }}</li>
+  <div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+      Current Requests
+    </div>
+    <div class="card-body p-2">
+      <div class="table-responsive">
+        <table id="requests-table" class="table table-dark table-striped table-bordered align-middle">
+          <thead class="table-primary">
+            <tr>
+              <th>ID</th>
+              <th>Name (ID)</th>
+              <th>Job Name</th>
+              <th>Job Number</th>
+              <th>Submitted</th>
+              <th>Items</th>
+              <th>Status</th>
+              <th>Assign Job</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+            <tr>
+              <td>{{ r.id }}</td>
+              <td>{{ r.employee_name }} ({{ r.employee_id }})</td>
+              <td>
+                {% if r.job_id %}
+                  <a href="{{ url_for('admin.job_detail', job_id=r.job_id) }}">
+                    {{ r.job.name or r.job_name }}
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
+              <td>{{ r.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td class="px-3">
+                <ul class="mb-0 ps-3">
+                  {% for i in r.items %}
+                    <li>{{ i.quantity }}× {{ i.item_name }}</li>
+                  {% endfor %}
+                </ul>
+              </td>
+              <td>
+                <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="status"
+                          class="form-select form-select-sm
+                            {% if r.status=='Not started' %}bg-danger text-white{% endif %}
+                            {% if r.status=='In progress' %}bg-warning text-dark{% endif %}
+                            {% if r.status=='Complete' %}bg-success text-white{% endif %}"
+                          onchange="this.form.submit()">
+                    <option value="Not started" {% if r.status=='Not started' %}selected{% endif %}>Not started</option>
+                    <option value="In progress" {% if r.status=='In progress' %}selected{% endif %}>In progress</option>
+                    <option value="Complete" {% if r.status=='Complete' %}selected{% endif %}>Complete</option>
+                  </select>
+                </form>
+              </td>
+              <td>
+                <form method="post" action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="job_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">— Unassigned —</option>
+                    {% for j in jobs %}
+                      <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>
+                        {{ j.name }} ({{ j.number }})
+                      </option>
                     {% endfor %}
-                  </ul>
-                </td>
-                <td>{{ req.submitted_at.strftime('%Y-%m-%d') }}</td>
-                <td>
-                  <a href="{{ url_for('admin.edit_request', req_id=req.id) }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
-                  <form method="post" action="{{ url_for('admin.delete_request', req_id=req.id) }}" style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+                  </select>
+                </form>
+              </td>
+              <td class="d-flex gap-1">
+                <a href="{{ url_for('admin.edit_request', req_id=r.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form method="post"
+                      action="{{ url_for('admin.delete_request', req_id=r.id) }}"
+                      onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
-
-<style>
-  .dataTables_wrapper .dataTables_paginate .paginate_button {
-    background-color: white !important;
-    color: #0d6efd !important;
-    border: 1px solid #0d6efd !important;
-    border-radius: 4px;
-    padding: 2px 8px;
-    margin: 2px;
-  }
-  .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-    font-weight: bold;
-  }
-  .table-responsive {
-    overflow-x: auto;
-    width: 100%;
-  }
-</style>
-
-{% endblock %}
 
 {% block scripts %}
 <script>
-  $(function() {
-    $('#active-requests-table, #completed-requests-table').DataTable({
-      paging: true,
-      searching: true,
-      ordering: true,
-      info: true,
-      autoWidth: false,
-      scrollX: true,
-      lengthMenu: [[5, 10, 25, -1], [5, 10, 25, "All"]]
+  $(function(){
+    $('#requests-table').DataTable({
+      paging:     true,
+      searching:  true,
+      ordering:   true,
+      info:       true,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+      language: {
+        search: "_INPUT_",
+        searchPlaceholder: "Search requests..."
+      }
     });
+
+    // Style pagination buttons
+    setTimeout(() => {
+      $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-outline-primary').css({
+        'margin': '0 2px',
+        'border': '1px solid #0d6efd',
+        'background-color': 'white',
+        'color': '#0d6efd'
+      });
+    }, 100);
   });
 </script>
+{% endblock %}
 {% endblock %}
