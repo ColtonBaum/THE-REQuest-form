@@ -47,14 +47,23 @@ def edit_request(req_id):
 
     if request.method == 'POST':
         req.employee_name = request.form['employee_name']
-        req.employee_id = request.form['employee_id']
         req.job_name = request.form['job_name']
         req.job_number = request.form['job_number']
+
+        for item in req.items:
+            item_name = request.form.get(f'item_name_{item.id}')
+            item_qty = request.form.get(f'item_qty_{item.id}')
+            if item_name is not None:
+                item.item_name = item_name
+            if item_qty is not None and item_qty.isdigit():
+                item.quantity = int(item_qty)
+
         db.session.commit()
         flash('Request updated successfully.', 'success')
         return redirect(url_for('admin.list_requests'))
 
     return render_template('admin/edit_request.html', req=req)
+
 
 
 @admin_bp.route("/requests/<int:req_id>")
