@@ -52,7 +52,7 @@ def edit_request(req_id):
         req.job_number = request.form['job_number']
         db.session.commit()
         flash('Request updated successfully.', 'success')
-        return redirect(url_for('admin.request_list'))
+        return redirect(url_for('admin.list_requests'))
 
     return render_template('admin/edit_request.html', req=req)
 
@@ -137,7 +137,6 @@ def jobs_list():
         "Other"
     ]
 
-    # Home → all active jobs
     jobs_by_pm = {
         "Home": (
             Job.query
@@ -147,7 +146,6 @@ def jobs_list():
         )
     }
 
-    # each PM → only their jobs
     for pm in pm_tabs[1:]:
         jobs_by_pm[pm] = (
             Job.query
@@ -354,7 +352,6 @@ def unassign_asset(asset_id):
 
 @admin_bp.route("/reports")
 def reports():
-    # show every archived job, with full request + asset-assignment history
     archived_jobs = (
         Job.query
            .filter_by(archived=True)
