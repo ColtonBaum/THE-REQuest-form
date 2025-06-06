@@ -22,7 +22,9 @@ app.config.update({
 })
 
 # Initialize extensions
-db.init_app(app)                            # bind SQLAlchemy to this app
+db.init_app(app) 
+with app.app_context():
+    db.create_all()                           # bind SQLAlchemy to this app
 csrf = CSRFProtect(app)                     # enable CSRF protection
 app.jinja_env.globals['csrf_token'] = generate_csrf  # expose csrf_token() in Jinja
 
