@@ -1,4 +1,5 @@
 {% extends "admin/base.html" %}
+
 {% block admin_content %}
 <div class="container py-4">
   <h3>Edit Request</h3>
@@ -26,7 +27,7 @@
     </div>
 
     <button type="submit" class="btn btn-primary">Save Changes</button>
-    <a href="{{ url_for('admin.request_list') }}" class="btn btn-secondary">Cancel</a>
+    <a href="{{ url_for('admin.requests_list') }}" class="btn btn-secondary">Cancel</a>
   </form>
 </div>
 {% endblock %}
