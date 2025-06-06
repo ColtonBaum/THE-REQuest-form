@@ -4,7 +4,7 @@
 {% block admin_content %}
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="text-primary">Current Requests</h3>
+    <h3 class="text-dark-blue">Current Requests</h3>
     <a href="{{ url_for('admin.export_csv') }}" class="btn btn-sm btn-outline-success">
       Export CSV
     </a>
@@ -12,17 +12,16 @@
 
   <div class="card shadow-sm">
     <div class="card-body table-responsive">
-      <table id="requests-table" class="table table-bordered align-middle" style="background-color: #eaeaea;">
+      <table id="requests-table" class="table table-bordered align-middle" style="background-color: #f0f2f5;">
         <thead class="table-primary text-dark">
           <tr>
             <th>ID</th>
             <th>Name (ID)</th>
             <th>Job Name</th>
             <th>Job Number</th>
-            <th>Need By</th>
-            <th>Submitted</th>
+            <th style="min-width: 120px;">Need By</th>
             <th>Items</th>
-            <th>Status</th>
+            <th style="min-width: 160px;">Status</th>
             <th>Assign Job</th>
             <th>Actions</th>
           </tr>
@@ -38,12 +37,11 @@
                   {{ r.job.name or r.job_name }}
                 </a>
               {% else %}
-                —
+                {{ r.job_name or '—' }}
               {% endif %}
             </td>
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
-            <td>{{ r.need_by_date }}</td>
-            <td>{{ r.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td style="min-width: 120px;">{{ r.need_by_date }}</td>
             <td class="px-3">
               <ul class="mb-0 ps-3">
                 {% for i in r.items %}
@@ -51,18 +49,18 @@
                 {% endfor %}
               </ul>
             </td>
-            <td>
+            <td style="min-width: 160px;">
               <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="status" class="form-select form-select-sm
-                    {% if r.status=='Not started' %}bg-danger text-white
-                    {% elif r.status=='In progress' %}bg-warning text-dark
-                    {% elif r.status=='Complete' %}bg-success text-white
-                    {% endif %}"
-                  onchange="this.form.submit()">
-                  <option value="Not started" {% if r.status=='Not started' %}selected{% endif %}>Not started</option>
-                  <option value="In progress" {% if r.status=='In progress' %}selected{% endif %}>In progress</option>
-                  <option value="Complete" {% if r.status=='Complete' %}selected{% endif %}>Complete</option>
+                  {% if r.status == 'Not started' %}bg-danger text-white
+                  {% elif r.status == 'In progress' %}bg-warning text-dark
+                  {% elif r.status == 'Complete' %}bg-success text-white
+                  {% endif %}"
+                onchange="this.form.submit()">
+                  <option value="Not started" {% if r.status == 'Not started' %}selected{% endif %}>Not started</option>
+                  <option value="In progress" {% if r.status == 'In progress' %}selected{% endif %}>In progress</option>
+                  <option value="Complete" {% if r.status == 'Complete' %}selected{% endif %}>Complete</option>
                 </select>
               </form>
             </td>
