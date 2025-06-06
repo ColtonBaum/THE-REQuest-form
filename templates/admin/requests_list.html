@@ -94,30 +94,19 @@
 {% block scripts %}
 <script>
   $(document).ready(function () {
+    if ($.fn.DataTable.isDataTable('#requests-table')) {
+      $('#requests-table').DataTable().destroy();
+    }
+
     $('#requests-table').DataTable({
       paging: false,  // disables pagination buttons
       searching: true,
       ordering: true,
       info: true,
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-    });
-  });
-</script>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  $(document).ready(function () {
-    if ($.fn.DataTable.isDataTable('#requests-table')) {
-      $('#requests-table').DataTable().destroy();
-    }
-
-    $('#requests-table').DataTable({
-      paging: false,  // <- no pagination buttons
-      searching: true,
-      ordering: true,
-      info: true,
-      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+      language: {
+        lengthMenu: "Show _MENU_ entries"
+      }
     });
   });
 </script>
