@@ -40,6 +40,21 @@ def delete_request(req_id):
     flash(f"Request #{req_id} deleted.", "danger")
     return redirect(url_for("admin.list_requests"))
 
+@admin_bp.route('/admin/edit/<int:req_id>', methods=['GET', 'POST'])
+def edit_request(req_id):
+    req = Request.query.get_or_404(req_id)
+
+    if request.method == 'POST':
+        req.employee_name = request.form['employee_name']
+        req.employee_id = request.form['employee_id']
+        req.job_name = request.form['job_name']
+        req.job_number = request.form['job_number']
+        db.session.commit()
+        flash('Request updated successfully.', 'success')
+        return redirect(url_for('admin.request_list'))
+
+    return render_template('admin/edit_request.html', req=req)
+
 
 @admin_bp.route("/requests/<int:req_id>")
 def request_detail(req_id):

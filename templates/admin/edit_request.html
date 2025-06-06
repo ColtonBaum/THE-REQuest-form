@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% block admin_content %}
+<div class="container py-4">
+  <h3>Edit Request</h3>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="mb-3">
+      <label for="employee_name" class="form-label">Employee Name</label>
+      <input type="text" name="employee_name" class="form-control" value="{{ req.employee_name }}">
+    </div>
+
+    <div class="mb-3">
+      <label for="employee_id" class="form-label">Employee ID</label>
+      <input type="text" name="employee_id" class="form-control" value="{{ req.employee_id }}">
+    </div>
+
+    <div class="mb-3">
+      <label for="job_name" class="form-label">Job Name</label>
+      <input type="text" name="job_name" class="form-control" value="{{ req.job_name }}">
+    </div>
+
+    <div class="mb-3">
+      <label for="job_number" class="form-label">Job Number</label>
+      <input type="text" name="job_number" class="form-control" value="{{ req.job_number }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{{ url_for('admin.request_list') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}
