@@ -23,7 +23,7 @@
           <th>Items</th>
           <th>Status</th>
           <th>Assign Job</th>
-          <th>Delete</th> <!-- NEW COLUMN -->
+          <th>Delete</th>
         </tr>
       </thead>
       <tbody>
@@ -64,18 +64,9 @@
                              {% if r.status=='In progress' %}bg-warning text-dark{% endif %}
                              {% if r.status=='Complete' %}bg-success text-white{% endif %}"
                       onchange="this.form.submit()">
-                <option value="Not started"
-                        {% if r.status=='Not started' %}selected{% endif %}>
-                  Not started
-                </option>
-                <option value="In progress"
-                        {% if r.status=='In progress' %}selected{% endif %}>
-                  In progress
-                </option>
-                <option value="Complete"
-                        {% if r.status=='Complete' %}selected{% endif %}>
-                  Complete
-                </option>
+                <option value="Not started" {% if r.status=='Not started' %}selected{% endif %}>Not started</option>
+                <option value="In progress" {% if r.status=='In progress' %}selected{% endif %}>In progress</option>
+                <option value="Complete" {% if r.status=='Complete' %}selected{% endif %}>Complete</option>
               </select>
             </form>
           </td>
@@ -89,8 +80,7 @@
                       onchange="this.form.submit()">
                 <option value="">— Unassigned —</option>
                 {% for j in jobs %}
-                <option value="{{ j.id }}"
-                        {% if r.job_id == j.id %}selected{% endif %}>
+                <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>
                   {{ j.name }} ({{ j.number }})
                 </option>
                 {% endfor %}
@@ -98,7 +88,6 @@
             </form>
           </td>
 
-          <!-- DELETE BUTTON -->
           <td>
             <form method="post"
                   action="{{ url_for('admin.delete_request', req_id=r.id) }}"
@@ -113,5 +102,11 @@
     </table>
   </div>
 </div>
-{% endblock %}
 
+<!-- Auto-refresh the page every 30 seconds -->
+<script>
+  setInterval(() => {
+    window.location.reload();
+  }, 30000); // 30 seconds
+</script>
+{% endblock %}
