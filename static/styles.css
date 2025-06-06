@@ -2,51 +2,93 @@
 
 /* 1. Body background & base font */
 body {
-    background-color: #f8f9fa;  /* light gray behind your cards */
-    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-  
-  /* 2. Card tweaks */
+  background-color: #f8f9fa;  /* light gray behind your cards */
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 2. Card tweaks */
+.card {
+  border: none;           /* remove default border */
+  border-radius: 0.5rem;  /* slightly more rounded corners */
+  box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+}
+
+/* 3. Form labels */
+.form-label {
+  font-weight: 600;       /* make labels stand out */
+}
+
+/* 4. Button adjustments */
+.btn-primary {
+  border-radius: 2rem;     /* pill-shaped buttons */
+  padding: 0.5rem 1.5rem;
+}
+.btn-outline-secondary {
+  border-radius: 2rem;
+}
+
+/* 5. Input focus state */
+.form-control:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); /* match Bootstrap primary color */
+}
+
+/* 6. Navbar brand */
+.navbar-brand {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* 7. Responsive tweaks */
+@media (max-width: 576px) {
   .card {
-    border: none;           /* remove default border */
-    border-radius: 0.5rem;  /* slightly more rounded corners */
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    margin: 0 0.5rem;  /* add side padding on mobile */
   }
-  
-  /* 3. Form labels */
-  .form-label {
-    font-weight: 600;       /* make labels stand out */
-  }
-  
-  /* 4. Button adjustments */
-  .btn-primary {
-    border-radius: 2rem;     /* pill-shaped buttons */
-    padding: 0.5rem 1.5rem;
-  }
-  .btn-outline-secondary {
-    border-radius: 2rem;
-  }
-  
-  /* 5. Input focus state */
-  .form-control:focus {
-    box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25); /* match Bootstrap primary color */
-  }
-  
-  /* 6. Navbar brand */
-  .navbar-brand {
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-  
-  /* 7. Responsive tweaks */
-  @media (max-width: 576px) {
-    .card {
-      margin: 0 0.5rem;  /* add side padding on mobile */
-    }
-  }
-  
-  /* 8. Optional: highlight required fields */
-  input[required] {
-    border-left: 3px solid #dc3545;  /* red bar on the left */
-  }
-  
+}
+
+/* 8. Optional: highlight required fields */
+input[required] {
+  border-left: 3px solid #dc3545;  /* red bar on the left */
+}
+
+/* 9. Requests table styling */
+.table-dark-blue thead {
+  background-color: #1b2a4e; /* dark blue header */
+  color: white;
+}
+
+.table-dark-blue tbody tr {
+  background-color: #324a63; /* dark gray-blue rows */
+  color: #e0e0e0;
+}
+
+.table-dark-blue tbody tr:hover {
+  background-color: #3c4f6b; /* slightly lighter on hover */
+}
+
+/* 10. Pagination styling */
+.pagination .page-link {
+  background-color: #ffffff;
+  color: #1b2a4e;
+  border: 1px solid #1b2a4e;
+  border-radius: 0.25rem;
+  margin: 0 0.1rem;
+}
+
+.pagination .page-link:hover {
+  background-color: #1b2a4e;
+  color: white;
+}
+
+.pagination .active .page-link {
+  background-color: #1b2a4e;
+  color: white;
+  border-color: #1b2a4e;
+}
+
+/* 11. Header text styling */
+.table-header-blue {
+  color: #1b2a4e;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}

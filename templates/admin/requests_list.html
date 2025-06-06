@@ -95,18 +95,13 @@
 <script>
   $(document).ready(function () {
     $('#requests-table').DataTable({
-      paging: true,
+      paging: false,  // disables pagination buttons
       searching: true,
       ordering: true,
       info: true,
       lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-      language: {
-        paginate: {
-          previous: '<span class="btn btn-sm btn-outline-primary bg-white text-primary me-2">Previous</span>',
-          next: '<span class="btn btn-sm btn-outline-primary bg-white text-primary ms-2">Next</span>'
-        }
-      }
     });
   });
 </script>
 {% endblock %}
+
