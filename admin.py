@@ -6,6 +6,7 @@ from flask import (
 )
 from models import db, Request, Job, Asset
 from forms import JobForm, AssetForm
+from flask import request
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
