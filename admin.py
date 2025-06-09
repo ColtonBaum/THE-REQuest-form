@@ -213,15 +213,17 @@ def new_job():
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
     pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle",
-        "Kade Evans",
-        "Dan Lewis",
-        "Jacob McNeil",
-        "Tiffany Chastain",
-        "Josh Walsh",
-        "Tayson Scott"
-        "Nate's Projects",
-        "Other"
+    "Kaden Argyle",
+    "Kade Evans",
+    "Dan Lewis",
+    "Jacob McNeil",
+    "Tiffany Chastain",
+    "Josh Walsh",
+    "Tayson Scott",
+    "Nate's Projects",
+    "Other"
+
+
     ]]
     form = JobForm(obj=job)
     form.manager.choices = pm_choices
