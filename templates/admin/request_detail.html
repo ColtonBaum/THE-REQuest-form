@@ -1,0 +1,57 @@
+{% extends "admin/base.html" %}
+{% block title %}Request #{{ req.id }}{% endblock %}
+
+{% block admin_content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-dark-blue">Request #{{ req.id }} Summary</h3>
+    <div>
+      <a href="{{ url_for('admin.list_requests') }}" class="btn btn-outline-secondary me-2">← Back</a>
+      <button class="btn btn-outline-primary" onclick="window.print()">Download PDF</button>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="mb-3">Request Details</h5>
+      <p><strong>Submitted By:</strong> {{ req.employee_name }} ({{ req.employee_id }})</p>
+      <p><strong>Job Name:</strong> {{ req.job.name if req.job_id else req.job_name or '—' }}</p>
+      <p><strong>Job Number:</strong> {{ req.job.number if req.job_id else req.job_number or '—' }}</p>
+      <p><strong>Need By Date:</strong> {{ req.need_by_date }}</p>
+      <p><strong>Status:</strong> {{ req.status }}</p>
+      <p><strong>Submitted At:</strong> {{ req.submitted_at.strftime('%Y-%m-%d %I:%M %p') }}</p>
+      
+      {% if req.notes %}
+        <p><strong>Notes:</strong> {{ req.notes }}</p>
+      {% endif %}
+      
+      {% if req.photo %}
+        <div class="my-3">
+          <strong>Attached Photo:</strong><br>
+          <img src="{{ url_for('static', filename='uploads/' ~ req.photo) }}" alt="Uploaded Photo" class="img-fluid rounded" style="max-width: 300px;">
+        </div>
+      {% endif %}
+
+      <hr>
+
+      <h5 class="mt-4">Requested Items</h5>
+      <table class="table table-bordered table-sm align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Item Name</th>
+            <th class="text-center">Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in req.items %}
+          <tr>
+            <td>{{ item.item_name }}</td>
+            <td class="text-center">{{ item.quantity }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
