@@ -82,7 +82,7 @@
 
           <!-- Modal -->
           <div class="modal fade" id="modal-{{ r.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ r.id }}" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-lg">
               <div class="modal-content">
                 <div class="modal-header">
                   <h5 class="modal-title" id="modalLabel-{{ r.id }}">Request Details</h5>
@@ -90,8 +90,8 @@
                 </div>
                 <div class="modal-body">
                   <p><strong>Name:</strong> {{ r.employee_name }}</p>
-                  <p><strong>Job Name:</strong> {{ r.job_name }}</p>
-                  <p><strong>Job Number:</strong> {{ r.job_number }}</p>
+                  <p><strong>Job Name:</strong> {{ r.job.name if r.job_id else r.job_name }}</p>
+                  <p><strong>Job Number:</strong> {{ r.job.number if r.job_id else r.job_number }}</p>
                   <p><strong>Need By Date:</strong> {{ r.need_by_date }}</p>
                   <hr>
                   <h6>Requested Items</h6>
