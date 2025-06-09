@@ -15,7 +15,6 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 @admin_bp.route("/requests")
 def list_requests():
-    # show all requests, even if Complete and assigned
     all_reqs = (
         Request.query
                .order_by(Request.submitted_at.desc())
@@ -64,12 +63,10 @@ def edit_request(req_id):
 
     return render_template('admin/edit_request.html', req=req)
 
-
-
 @admin_bp.route("/requests/<int:req_id>")
 def request_detail(req_id):
     req = Request.query.get_or_404(req_id)
-    return render_template("admin/request_detail.html", request=req)
+    return render_template("admin/request_detail.html", req=req)
 
 
 @admin_bp.route("/requests/<int:req_id>/assign", methods=["POST"])
