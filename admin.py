@@ -241,6 +241,14 @@ def archive_job(job_id):
     flash("Job archived.", "warning")
     return redirect(url_for("admin.jobs_list"))
 
+@admin_bp.route("/jobs/<int:job_id>/delete", methods=["POST"])
+def delete_job(job_id):
+    job = Job.query.get_or_404(job_id)
+    db.session.delete(job)
+    db.session.commit()
+    flash(f"Job '{job.name}' deleted.", "danger")
+    return redirect(url_for("admin.jobs_list"))
+
 
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
