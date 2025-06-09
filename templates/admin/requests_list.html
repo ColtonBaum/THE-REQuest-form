@@ -41,11 +41,11 @@
               {% endif %}
             </td>
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
-            <td style="min-width: 120px;">{{ r.need_by_date }}</td>
+            <td>{{ r.need_by_date }}</td>
             <td>
               <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-{{ r.id }}">View</button>
             </td>
-            <td style="min-width: 160px;">
+            <td>
               <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="status" class="form-select form-select-sm
@@ -89,16 +89,14 @@
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                  <div class="mb-3">
-                    <strong>Name:</strong> {{ r.employee_name }}<br>
-                    <strong>Job Name:</strong> {{ r.job.name if r.job_id else r.job_name }}<br>
-                    <strong>Job Number:</strong> {{ r.job.number if r.job_id else r.job_number }}<br>
-                    <strong>Need By Date:</strong> {{ r.need_by_date }}
-                  </div>
+                  <p><strong>Name:</strong> {{ r.employee_name }}</p>
+                  <p><strong>Job Name:</strong> {{ r.job.name if r.job_id else r.job_name }}</p>
+                  <p><strong>Job Number:</strong> {{ r.job.number if r.job_id else r.job_number }}</p>
+                  <p><strong>Need By Date:</strong> {{ r.need_by_date }}</p>
                   <hr>
                   <h6>Requested Items</h6>
-                  <table class="table table-sm table-bordered">
-                    <thead class="table-light">
+                  <table class="table table-sm">
+                    <thead>
                       <tr>
                         <th>Item</th>
                         <th>Quantity</th>
