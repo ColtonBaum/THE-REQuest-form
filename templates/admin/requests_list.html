@@ -20,7 +20,7 @@
             <th>Job Name</th>
             <th>Job Number</th>
             <th style="min-width: 120px;">Need By</th>
-            <th>Items</th>
+            <th>View</th>
             <th style="min-width: 160px;">Status</th>
             <th>Assign Job</th>
             <th>Actions</th>
@@ -42,12 +42,8 @@
             </td>
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
             <td style="min-width: 120px;">{{ r.need_by_date }}</td>
-            <td class="px-3">
-              <ul class="mb-0 ps-3">
-                {% for i in r.items %}
-                  <li>{{ i.quantity }}× {{ i.item_name }}</li>
-                {% endfor %}
-              </ul>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modal-{{ r.id }}">View</button>
             </td>
             <td style="min-width: 160px;">
               <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
@@ -83,6 +79,40 @@
               </form>
             </td>
           </tr>
+
+          <!-- Modal -->
+          <div class="modal fade" id="modal-{{ r.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ r.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="modalLabel-{{ r.id }}">Request Details</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>Name:</strong> {{ r.employee_name }}</p>
+                  <p><strong>Job Name:</strong> {{ r.job_name }}</p>
+                  <p><strong>Job Number:</strong> {{ r.job_number }}</p>
+                  <p><strong>Need By Date:</strong> {{ r.need_by_date }}</p>
+                  <hr>
+                  <h6>Requested Items</h6>
+                  <table class="table table-sm">
+                    <thead>
+                      <tr><th>Item</th><th>Quantity</th></tr>
+                    </thead>
+                    <tbody>
+                      {% for i in r.items %}
+                      <tr>
+                        <td>{{ i.item_name }}</td>
+                        <td>{{ i.quantity }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {% endfor %}
         </tbody>
       </table>
@@ -99,7 +129,7 @@
     }
 
     $('#requests-table').DataTable({
-      paging: false,  // disables pagination buttons
+      paging: false,
       searching: true,
       ordering: true,
       info: true,
