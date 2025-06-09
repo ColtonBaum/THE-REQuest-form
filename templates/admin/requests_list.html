@@ -106,4 +106,19 @@
     });
   });
 </script>
+
+<!-- Socket.IO script for real-time refresh -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+<script>
+  const socket = io({ path: "/socket.io" });
+
+  socket.on("connect", () => {
+    console.log("Socket connected.");
+  });
+
+  socket.on("new_request_submitted", (data) => {
+    console.log("New request submitted:", data);
+    location.reload();
+  });
+</script>
 {% endblock %}

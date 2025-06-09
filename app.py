@@ -6,6 +6,7 @@ from public import public_bp
 from admin import admin_bp
 import os
 from dotenv import load_dotenv
+from flask_socketio import SocketIO
 
 load_dotenv()  # Load variables from .env if present
 
@@ -35,11 +36,18 @@ db.init_app(app)
 csrf = CSRFProtect(app)
 app.jinja_env.globals['csrf_token'] = generate_csrf
 
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 # Register blueprints
 app.register_blueprint(public_bp)
 app.register_blueprint(admin_bp)
 
+# Expose socketio instance for other modules (like public.py)
+app.socketio = socketio
+
+# Run the app with SocketIO
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()  # Ensure tables are created
-    app.run(host="0.0.0.0", port=8080)
+    socketio.run(app, host="0.0.0.0", port=8080)

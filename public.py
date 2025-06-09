@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from models import db, Request, RequestItem
 from forms import RequestForm
 
@@ -30,6 +30,13 @@ def make_request():
             ))
         db.session.add(req)
         db.session.commit()
+
+        # Emit SocketIO event to notify admin interface
+        current_app.socketio.emit("new_request_submitted", {
+            "employee_name": req.employee_name,
+            "job_name": req.job_name,
+            "job_number": req.job_number
+        })
 
         # Prepare submitted data for confirmation page
         submitted_data = {
