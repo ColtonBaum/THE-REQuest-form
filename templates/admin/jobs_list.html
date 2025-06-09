@@ -60,10 +60,14 @@
                     <td>{{ job.start_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ job.end_date.strftime('%Y-%m-%d') }}</td>
                     <td>{{ job.manager }}</td>
-                    <td>
+                    <td class="text-nowrap">
                       <form method="post" action="{{ url_for('admin.archive_job', job_id=job.id) }}" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-warning">Archive</button>
+                      </form>
+                      <form method="post" action="{{ url_for('admin.delete_job', job_id=job.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this job?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
                       </form>
                     </td>
                   </tr>
