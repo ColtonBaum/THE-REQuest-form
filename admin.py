@@ -219,6 +219,7 @@ def edit_job(job_id):
         "Jacob McNeil",
         "Tiffany Chastain",
         "Josh Walsh",
+        "Tayson Scott"
         "Nate's Projects",
         "Other"
     ]]
