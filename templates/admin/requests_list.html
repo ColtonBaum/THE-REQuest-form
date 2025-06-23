@@ -41,7 +41,8 @@
               {% endif %}
             </td>
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
-            <td>{{ r.need_by_date }}</td>
+            <!-- American-style Need By date -->
+            <td style="min-width: 120px;">{{ r.need_by_date.strftime('%m/%d/%y') }}</td>
             <td>
               <a href="{{ url_for('admin.request_detail', req_id=r.id) }}" class="btn btn-sm btn-dark">View</a>
             </td>
