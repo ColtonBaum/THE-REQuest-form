@@ -4,7 +4,7 @@ from flask import (
     Blueprint, render_template, request as flask_req,
     redirect, url_for, flash, make_response
 )
-from models import db, Request, Job, Asset
+from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
 from flask import request
 
@@ -126,6 +126,42 @@ def update_status(req_id):
         flash(f"Request #{req_id} set to “{new}”.", "success")
     return redirect(url_for("admin.list_requests"))
 
+@admin_bp.route('/requests/<int:req_id>/edit', methods=['GET', 'POST'])
+def edit_request(req_id):
+    req = Request.query.get_or_404(req_id)
+
+    if flask_req.method == 'POST':
+        # update the top‐level fields
+        req.employee_name = flask_req.form['employee_name']
+        req.job_name      = flask_req.form['job_name']
+        req.job_number    = flask_req.form['job_number']
+        req.need_by_date  = flask_req.form['need_by_date']
+
+        # update or delete existing items
+        for item in list(req.items):
+            name = flask_req.form.get(f'item_name_{item.id}')
+            qty  = flask_req.form.get(f'item_qty_{item.id}')
+            if not name:
+                # user cleared name → delete
+                req.items.remove(item)
+                db.session.delete(item)
+            else:
+                item.item_name = name
+                if qty and qty.isdigit():
+                    item.quantity = int(qty)
+
+        # add any newly created items
+        new_names = flask_req.form.getlist('new_item_name')
+        new_qtys  = flask_req.form.getlist('new_item_qty')
+        for name, qty in zip(new_names, new_qtys):
+            if name and qty.isdigit():
+                req.items.append(RequestItem(item_name=name, quantity=int(qty)))
+
+        db.session.commit()
+        flash('Request updated successfully.', 'success')
+        return redirect(url_for('admin.list_requests'))
+
+    return render_template('admin/edit_request.html', req=req)
 
 # -- Jobs Routes -------------------------------------------------------------
 
