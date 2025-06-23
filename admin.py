@@ -46,18 +46,18 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
     if flask_req.method == "POST":
-        # update top‐level fields
+        # Update core fields
         req.employee_name = flask_req.form["employee_name"]
         req.job_name      = flask_req.form["job_name"]
         req.job_number    = flask_req.form["job_number"]
         req.need_by_date  = flask_req.form["need_by_date"]
 
-        # update or delete existing items
+        # Update or remove existing items
         for item in list(req.items):
             name = flask_req.form.get(f"item_name_{item.id}")
             qty  = flask_req.form.get(f"item_qty_{item.id}")
             if not name:
-                # cleared name → delete
+                # If name cleared, delete item
                 req.items.remove(item)
                 db.session.delete(item)
             else:
@@ -65,7 +65,7 @@ def edit_request(req_id):
                 if qty and qty.isdigit():
                     item.quantity = int(qty)
 
-        # add any newly created items
+        # Add new items
         new_names = flask_req.form.getlist("new_item_name")
         new_qtys  = flask_req.form.getlist("new_item_qty")
         for name, qty in zip(new_names, new_qtys):
@@ -148,17 +148,10 @@ def update_status(req_id):
 def jobs_list():
     pm_tabs = [
         "Home",
-        "Kaden Argyle",
-        "Kade Evans",
-        "Dan Lewis",
-        "Jacob McNeil",
-        "Tiffany Chastain",
-        "Josh Walsh",
-        "Tayson Scott",
-        "Nate's Projects",
-        "Other"
+        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
+        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
+        "Nate's Projects", "Other"
     ]
-
     jobs_by_pm = {
         "Home": (
             Job.query
@@ -174,12 +167,7 @@ def jobs_list():
                .order_by(Job.start_date.desc())
                .all()
         )
-
-    return render_template(
-        "admin/jobs_list.html",
-        pm_tabs=pm_tabs,
-        jobs_by_pm=jobs_by_pm
-    )
+    return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
 
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
@@ -191,7 +179,6 @@ def new_job():
     ]]
     form = JobForm()
     form.manager.choices = pm_choices
-
     if form.validate_on_submit():
         job = Job(
             name       = form.name.data,
@@ -207,7 +194,6 @@ def new_job():
         db.session.commit()
         flash("New job created.", "success")
         return redirect(url_for("admin.jobs_list"))
-
     return render_template("admin/job_form.html", form=form, job=None)
 
 
@@ -221,13 +207,11 @@ def edit_job(job_id):
     ]]
     form = JobForm(obj=job)
     form.manager.choices = pm_choices
-
     if form.validate_on_submit():
         form.populate_obj(job)
         db.session.commit()
         flash("Job updated.", "success")
         return redirect(url_for("admin.jobs_list"))
-
     return render_template("admin/job_form.html", form=form, job=job)
 
 
@@ -278,29 +262,16 @@ def job_detail(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
-    job = Job.query.get_or_404(job_id)
-    reqs = (
-        Request.query
-               .filter_by(job_id=job_id)
-               .order_by(Request.submitted_at.desc())
-               .all()
-    )
-    return render_template(
-        "admin/job_requests.html",
-        job=job,
-        requests=reqs
-    )
+    job = Request.query.get_or_404(job_id)
+    reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
+    return render_template("admin/job_requests.html", job=job, requests=reqs)
 
 
 @admin_bp.route("/jobs/<int:job_id>/assets")
 def job_assets(job_id):
     job = Job.query.get_or_404(job_id)
     assets = Asset.query.filter_by(current_job_id=job_id).all()
-    return render_template(
-        "admin/job_assets.html",
-        job=job,
-        assets=assets
-    )
+    return render_template("admin/job_assets.html", job=job, assets=assets)
 
 
 # -- Assets Routes -----------------------------------------------------------
@@ -308,17 +279,8 @@ def job_assets(job_id):
 @admin_bp.route("/assets")
 def assets_list():
     assets = Asset.query.all()
-    jobs   = (
-        Job.query
-           .filter_by(archived=False)
-           .order_by(Job.start_date.desc())
-           .all()
-    )
-    return render_template(
-        "admin/assets_list.html",
-        assets=assets,
-        jobs=jobs
-    )
+    jobs   = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
+    return render_template("admin/assets_list.html", assets=assets, jobs=jobs)
 
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
@@ -380,7 +342,4 @@ def reports():
            .order_by(Job.start_date.desc())
            .all()
     )
-    return render_template(
-        "admin/reports.html",
-        jobs=archived_jobs
-    )
+    return render_template("admin/reports.html", jobs=archived_jobs)
