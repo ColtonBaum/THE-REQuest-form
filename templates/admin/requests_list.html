@@ -56,8 +56,7 @@
             <td>
               <form method="post"
                     action="{{ url_for('admin.update_status', req_id=r.id) }}">
-                <input type="hidden" name="csrf_token"
-                       value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="status"
                         class="form-select form-select-sm
                           {% if r.status=='Not started' %}bg-danger text-white
@@ -83,8 +82,7 @@
             <td>
               <form method="post"
                     action="{{ url_for('admin.assign_request', req_id=r.id) }}">
-                <input type="hidden" name="csrf_token"
-                       value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="job_id"
                         class="form-select form-select-sm"
                         onchange="this.form.submit()">
@@ -105,8 +103,7 @@
                     action="{{ url_for('admin.delete_request', req_id=r.id) }}"
                     class="d-inline"
                     onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
-                <input type="hidden" name="csrf_token"
-                       value="{{ csrf_token() }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="btn btn-sm btn-outline-danger">
                   Delete
@@ -138,6 +135,7 @@
     });
   });
 </script>
+
 <!-- real-time refresh -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
 <script>
