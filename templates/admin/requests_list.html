@@ -5,14 +5,14 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h3 class="text-dark-blue">Current Requests</h3>
-    <a href="{{ url_for('admin.export_csv') }}" class="btn btn-sm btn-outline-success">
-      Export CSV
-    </a>
+    <a href="{{ url_for('admin.export_csv') }}" class="btn btn-sm btn-outline-success">Export CSV</a>
   </div>
 
   <div class="card shadow-sm">
     <div class="card-body table-responsive">
-      <table id="requests-table" class="table table-bordered align-middle" style="background-color: #f0f2f5;">
+      <table id="requests-table"
+             class="table table-bordered align-middle"
+             style="background-color: #f0f2f5;">
         <thead class="table-primary text-dark">
           <tr>
             <th>ID</th>
@@ -41,42 +41,76 @@
               {% endif %}
             </td>
             <td>{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
-            <!-- American-style Need By date -->
-            <td style="min-width: 120px;">{{ r.need_by_date.strftime('%m/%d/%y') }}</td>
-            <td>
-              <a href="{{ url_for('admin.request_detail', req_id=r.id) }}" class="btn btn-sm btn-dark">View</a>
+            <td style="min-width: 120px;">
+              {% if r.need_by_date %}
+                {% set parts = r.need_by_date.split('-') %}
+                {{ parts[1] }}/{{ parts[2] }}/{{ parts[0][-2:] }}
+              {% else %}
+                —
+              {% endif %}
             </td>
             <td>
-              <form method="post" action="{{ url_for('admin.update_status', req_id=r.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="status" class="form-select form-select-sm
-                  {% if r.status == 'Not started' %}bg-danger text-white
-                  {% elif r.status == 'In progress' %}bg-warning text-dark
-                  {% elif r.status == 'Complete' %}bg-success text-white
-                  {% endif %}"
-                onchange="this.form.submit()">
-                  <option value="Not started" {% if r.status == 'Not started' %}selected{% endif %}>Not started</option>
-                  <option value="In progress" {% if r.status == 'In progress' %}selected{% endif %}>In progress</option>
-                  <option value="Complete" {% if r.status == 'Complete' %}selected{% endif %}>Complete</option>
+              <a href="{{ url_for('admin.request_detail', req_id=r.id) }}"
+                 class="btn btn-sm btn-dark">View</a>
+            </td>
+            <td>
+              <form method="post"
+                    action="{{ url_for('admin.update_status', req_id=r.id) }}">
+                <input type="hidden" name="csrf_token"
+                       value="{{ csrf_token() }}">
+                <select name="status"
+                        class="form-select form-select-sm
+                          {% if r.status=='Not started' %}bg-danger text-white
+                          {% elif r.status=='In progress' %}bg-warning text-dark
+                          {% elif r.status=='Complete' %}bg-success text-white
+                          {% endif %}"
+                        onchange="this.form.submit()">
+                  <option value="Not started"
+                          {% if r.status=='Not started' %}selected{% endif %}>
+                    Not started
+                  </option>
+                  <option value="In progress"
+                          {% if r.status=='In progress' %}selected{% endif %}>
+                    In progress
+                  </option>
+                  <option value="Complete"
+                          {% if r.status=='Complete' %}selected{% endif %}>
+                    Complete
+                  </option>
                 </select>
               </form>
             </td>
             <td>
-              <form method="post" action="{{ url_for('admin.assign_request', req_id=r.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="job_id" class="form-select form-select-sm" onchange="this.form.submit()">
+              <form method="post"
+                    action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+                <input type="hidden" name="csrf_token"
+                       value="{{ csrf_token() }}">
+                <select name="job_id"
+                        class="form-select form-select-sm"
+                        onchange="this.form.submit()">
                   <option value="">— Unassigned —</option>
                   {% for j in jobs %}
-                  <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>{{ j.name }} ({{ j.number }})</option>
+                  <option value="{{ j.id }}"
+                          {% if r.job_id==j.id %}selected{% endif %}>
+                    {{ j.name }} ({{ j.number }})
+                  </option>
                   {% endfor %}
                 </select>
               </form>
             </td>
             <td class="text-nowrap">
-              <a href="{{ url_for('admin.edit_request', req_id=r.id) }}" class="btn btn-sm btn-outline-primary mb-1">Edit</a>
-              <form method="post" action="{{ url_for('admin.delete_request', req_id=r.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+              <a href="{{ url_for('admin.edit_request', req_id=r.id) }}"
+                 class="btn btn-sm btn-outline-primary mb-1">Edit</a>
+              <form method="post"
+                    action="{{ url_for('admin.delete_request', req_id=r.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Are you sure you want to permanently delete this request?');">
+                <input type="hidden" name="csrf_token"
+                       value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-sm btn-outline-danger">
+                  Delete
+                </button>
               </form>
             </td>
           </tr>
@@ -90,36 +124,24 @@
 
 {% block scripts %}
 <script>
-  $(document).ready(function () {
-    if ($.fn.DataTable.isDataTable('#requests-table')) {
+  $(document).ready(function(){
+    if ($.fn.DataTable.isDataTable('#requests-table')){
       $('#requests-table').DataTable().destroy();
     }
-
     $('#requests-table').DataTable({
       paging: false,
       searching: true,
       ordering: true,
       info: true,
-      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
-      language: {
-        lengthMenu: "Show _MENU_ entries"
-      }
+      lengthMenu: [[10,25,50,-1],[10,25,50,"All"]],
+      language: { lengthMenu: "Show _MENU_ entries" }
     });
   });
 </script>
-
-<!-- Socket.IO script for real-time refresh -->
+<!-- real-time refresh -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
 <script>
   const socket = io({ path: "/socket.io" });
-
-  socket.on("connect", () => {
-    console.log("Socket connected.");
-  });
-
-  socket.on("new_request_submitted", (data) => {
-    console.log("New request submitted:", data);
-    location.reload();
-  });
+  socket.on("new_request_submitted", () => location.reload());
 </script>
 {% endblock %}
