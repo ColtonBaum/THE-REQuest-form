@@ -7,6 +7,7 @@ from admin import admin_bp
 import os
 from dotenv import load_dotenv
 from flask_socketio import SocketIO
+from flask_migrate import Migrate
 
 # For timezone conversion filter
 default_tz = 'America/Denver'
@@ -50,6 +51,7 @@ app.config.update({
 
 # Initialize extensions
 db.init_app(app)
+migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 app.jinja_env.globals['csrf_token'] = generate_csrf
 
