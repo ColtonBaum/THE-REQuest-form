@@ -311,7 +311,6 @@ def edit_asset(asset_id):
     form  = AssetForm(obj=asset)
     if form.validate_on_submit():
         asset.group         = form.group.data
-        asset.type          = form.type.data
         asset.identifier    = form.identifier.data
         asset.serial_number = form.serial_number.data
         db.session.commit()
