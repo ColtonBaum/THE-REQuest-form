@@ -290,13 +290,13 @@ def job_assets(job_id):
 
 @admin_bp.route("/assets")
 def assets_list():
-    # pull in the non-archived jobs sorted by start_date
-    jobs = (
-        Job.query
-           .filter_by(archived=False)
-           .order_by(Job.start_date.desc())
-           .all()
-    )
+    jobs = Job.query \
+              .filter_by(archived=False) \
+              .order_by(Job.start_date.desc()) \
+              .all()
+    assets = Asset.query.all()
+    return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
+
 
     # load assets, but when SQLAlchemy joins current_job, only select the columns we know exist
     assets = (
