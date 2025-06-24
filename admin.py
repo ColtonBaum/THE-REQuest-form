@@ -8,6 +8,7 @@ from flask import request
 from sqlalchemy import and_, not_
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
+from sqlalchemy.orm import joinedload, load_only
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -289,16 +290,27 @@ def job_assets(job_id):
 
 @admin_bp.route("/assets")
 def assets_list():
-    # show the non-archived jobs sorted by start_date
-    jobs = Job.query\
-              .filter_by(archived=False)\
-              .order_by(Job.start_date.desc())\
-              .all()
+    # pull in the non-archived jobs sorted by start_date
+    jobs = (
+        Job.query
+           .filter_by(archived=False)
+           .order_by(Job.start_date.desc())
+           .all()
+    )
 
-    # (you can leave your assets query as-is, e.g.)
-    assets = Asset.query.all()
+    # load assets, but when SQLAlchemy joins current_job, only select the columns we know exist
+    assets = (
+        Asset.query
+             .options(
+                 joinedload(Asset.current_job).load_only(
+                     "id", "name", "number", "start_date", "manager", "status", "archived"
+                 )
+             )
+             .all()
+    )
 
     return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
+
 
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
