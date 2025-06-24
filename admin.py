@@ -254,13 +254,12 @@ def assets_list():
     assets = (
         Asset.query
              .options(
-                 joinedload(Asset.current_job).load_only(
-                     "id", "name", "number", "start_date", "manager", "status", "archived"
-                 )
+                 joinedload(Asset.current_job)  # Removed .load_only(...)
              )
              .all()
     )
     return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
+
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
