@@ -246,16 +246,17 @@ def job_assets(job_id):
     assets = Asset.query.filter_by(current_job_id=job_id).all()
     return render_template("admin/job_assets.html", job=job, assets=assets)
 
-@app.route("/admin/requests/<int:request_id>/edit", methods=["GET", "POST"])
-def edit_request(request_id):
+@admin_bp.route("/requests/<int:request_id>/edit_job", methods=["GET", "POST"])
+def edit_request_job(request_id):
     req = Request.query.get_or_404(request_id)
     jobs = Job.query.all()
-    if request.method == "POST":
-        req.job_id = request.form["job_id"]
+    if flask_req.method == "POST":
+        req.job_id = flask_req.form["job_id"]
         db.session.commit()
-        flash("Assignment updated.")
+        flash("Job assignment updated.", "success")
         return redirect(url_for("admin.jobs_list"))
-    return render_template("admin/edit_request.html", request=req, jobs=jobs)
+    return render_template("admin/edit_request_job.html", request=req, jobs=jobs)
+
 
 
 # -- Assets Routes -----------------------------------------------------------
