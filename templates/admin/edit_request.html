@@ -50,6 +50,16 @@
 </div>
 {% endblock %}
 
+<form method="post">
+  <label>Reassign to Job:</label>
+  <select name="job_id">
+    {% for job in jobs %}
+      <option value="{{ job.id }}" {% if job.id == request.job_id %}selected{% endif %}>{{ job.name }} ({{ job.number }})</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Update</button>
+</form>
+
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {

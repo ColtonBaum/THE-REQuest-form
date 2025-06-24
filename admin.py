@@ -246,6 +246,18 @@ def job_assets(job_id):
     assets = Asset.query.filter_by(current_job_id=job_id).all()
     return render_template("admin/job_assets.html", job=job, assets=assets)
 
+@app.route("/admin/requests/<int:request_id>/edit", methods=["GET", "POST"])
+def edit_request(request_id):
+    req = Request.query.get_or_404(request_id)
+    jobs = Job.query.all()
+    if request.method == "POST":
+        req.job_id = request.form["job_id"]
+        db.session.commit()
+        flash("Assignment updated.")
+        return redirect(url_for("admin.jobs_list"))
+    return render_template("admin/edit_request.html", request=req, jobs=jobs)
+
+
 # -- Assets Routes -----------------------------------------------------------
 
 @admin_bp.route("/assets")
