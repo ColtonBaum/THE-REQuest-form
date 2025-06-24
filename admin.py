@@ -249,7 +249,7 @@ def delete_job(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
-    job = Request.query.get_or_404(job_id)
+    job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
     completed_reqs  = (
         Request.query
@@ -267,8 +267,13 @@ def job_detail(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
-    job = Request.query.get_or_404(job_id)
-    reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
+    job = Job.query.get_or_404(job_id)
+    reqs = (
+        Request.query
+               .filter_by(job_id=job_id)
+               .order_by(Request.submitted_at.desc())
+               .all()
+    )
     return render_template("admin/job_requests.html", job=job, requests=reqs)
 
 
@@ -277,6 +282,7 @@ def job_assets(job_id):
     job = Job.query.get_or_404(job_id)
     assets = Asset.query.filter_by(current_job_id=job_id).all()
     return render_template("admin/job_assets.html", job=job, assets=assets)
+
 
 
 # -- Assets Routes -----------------------------------------------------------
