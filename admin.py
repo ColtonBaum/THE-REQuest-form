@@ -155,6 +155,7 @@ def update_status(req_id):
 
 # -- Jobs Routes -------------------------------------------------------------
 
+
 @admin_bp.route("/jobs")
 def jobs_list():
     pm_tabs = [
@@ -178,6 +179,7 @@ def jobs_list():
                .all()
         )
     return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
+
 
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
@@ -287,9 +289,16 @@ def job_assets(job_id):
 
 @admin_bp.route("/assets")
 def assets_list():
+    # show the non-archived jobs sorted by start_date
+    jobs = Job.query\
+              .filter_by(archived=False)\
+              .order_by(Job.start_date.desc())\
+              .all()
+
+    # (you can leave your assets query as-is, e.g.)
     assets = Asset.query.all()
-    jobs   = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
-    return render_template("admin/assets_list.html", assets=assets, jobs=jobs)
+
+    return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
 
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
