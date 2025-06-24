@@ -145,6 +145,7 @@ def update_status(req_id):
     return redirect(url_for("admin.list_requests"))
 
 # -- Jobs Routes -------------------------------------------------------------
+# -- Jobs Routes -------------------------------------------------------------
 
 @admin_bp.route("/jobs")
 def jobs_list():
@@ -227,11 +228,13 @@ def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
     completed_reqs = Request.query.filter_by(job_id=job_id, status="Complete").order_by(Request.submitted_at.desc()).all()
+    jobs = Job.query.order_by(Job.start_date.desc()).all()  # ✅ Needed for dropdown reassignment
     return render_template(
         "admin/job_detail.html",
         job=job,
         assigned_assets=assigned_assets,
-        completed_reqs=completed_reqs
+        completed_reqs=completed_reqs,
+        jobs=jobs  # ✅ Pass to template
     )
 
 @admin_bp.route("/jobs/<int:job_id>/requests")

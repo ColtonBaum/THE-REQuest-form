@@ -102,7 +102,7 @@
             <th>Job Number</th>
             <th>Submitted</th>
             <th>Items</th>
-            <th>Status</th>
+            <th>Status / Reassign</th>
           </tr>
         </thead>
         <tbody>
@@ -128,7 +128,19 @@
                 {% endfor %}
               </ul>
             </td>
-            <td>{{ r.status }}</td>
+            <td>
+              <div>{{ r.status }}</div>
+              <form method="POST" action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+                <select name="job_id" class="form-select form-select-sm mt-1">
+                  {% for j in jobs %}
+                    <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>
+                      {{ j.name }} ({{ j.number }})
+                    </option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary mt-1">Reassign</button>
+              </form>
+            </td>
           </tr>
           {% else %}
           <tr>
