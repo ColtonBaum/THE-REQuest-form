@@ -16,14 +16,18 @@
         display: block;
         width: 100%;
       }
-      #requests-table tr { margin-bottom: 1rem; border: 1px solid #dee2e6; border-radius: .25rem; }
+      #requests-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: .25rem;
+      }
       #requests-table td {
         padding: .5rem;
         text-align: right;
         position: relative;
       }
       #requests-table td:before {
-        content: attr(data-label);
+        content: attr(data-label) ": ";
         float: left;
         font-weight: 600;
       }
@@ -62,7 +66,9 @@
                 {{ r.job_name or '—' }}
               {% endif %}
             </td>
-            <td data-label="Job Number">{{ r.job.number if r.job_id else r.job_number or '—' }}</td>
+            <td data-label="Job Number">
+              {{ r.job.number if r.job_id else r.job_number or '—' }}
+            </td>
             <td data-label="Need By" style="min-width: 120px;">
               {% if r.need_by_date %}
                 {% set parts = r.need_by_date.split('-') %}
