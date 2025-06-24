@@ -8,6 +8,11 @@ import os
 from dotenv import load_dotenv
 from flask_socketio import SocketIO
 
+# For timezone conversion filter
+default_tz = 'America/Denver'
+from datetime import datetime
+import pytz
+
 load_dotenv()  # Load variables from .env if present
 
 # Create Flask app
@@ -16,6 +21,18 @@ app = Flask(
     template_folder="templates",
     static_folder="static"
 )
+
+# Jinja2 filter to convert UTC datetime to local Mountain Time
+@app.template_filter('localtime')
+def localtime(dt_obj, tz_name=default_tz, fmt='%m/%d/%Y %I:%M %p'):
+    """Convert an aware UTC datetime to local tz and format."""
+    # ensure UTC tzinfo
+    if dt_obj.tzinfo is None:
+        utc_dt = dt_obj.replace(tzinfo=pytz.utc)
+    else:
+        utc_dt = dt_obj.astimezone(pytz.utc)
+    local_dt = utc_dt.astimezone(pytz.timezone(tz_name))
+    return local_dt.strftime(fmt)
 
 # Get the database URI from environment
 db_uri = os.environ.get("DATABASE_URL")
