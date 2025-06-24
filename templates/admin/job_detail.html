@@ -131,6 +131,7 @@
             <td>
               <div>{{ r.status }}</div>
               <form method="POST" action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="job_id" class="form-select form-select-sm mt-1">
                   {% for j in jobs %}
                     <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>
