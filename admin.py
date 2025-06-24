@@ -153,6 +153,8 @@ def update_status(req_id):
 
 # -- Jobs Routes -------------------------------------------------------------
 
+# -- Jobs Routes -------------------------------------------------------------
+
 @admin_bp.route("/jobs")
 def jobs_list():
     pm_tabs = [
@@ -164,7 +166,7 @@ def jobs_list():
         "Home": (
             Job.query
                .filter_by(archived=False)
-               .order_by(Job.created_at.desc())
+               .order_by(Job.start_date.desc())
                .all()
         )
     }
@@ -172,7 +174,7 @@ def jobs_list():
         jobs_by_pm[pm] = (
             Job.query
                .filter_by(manager=pm, archived=False)
-               .order_by(Job.created_at.desc())
+               .order_by(Job.start_date.desc())
                .all()
         )
     return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
