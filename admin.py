@@ -282,6 +282,7 @@ def job_assets(job_id):
 
 
 
+
 # -- Assets Routes -----------------------------------------------------------
 
 @admin_bp.route("/assets")
