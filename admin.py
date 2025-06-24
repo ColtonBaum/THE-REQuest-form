@@ -5,6 +5,7 @@ from flask import (
     redirect, url_for, flash, make_response
 )
 from flask import request
+from sqlalchemy import and_, not_
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
 
@@ -15,8 +16,17 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 @admin_bp.route("/requests")
 def list_requests():
+    # exclude requests that are both assigned and complete
     all_reqs = (
         Request.query
+               .filter(
+                   not_(
+                       and_(
+                           Request.status == "Complete",
+                           Request.job_id.isnot(None)
+                       )
+                   )
+               )
                .order_by(Request.submitted_at.desc())
                .all()
     )
@@ -57,7 +67,6 @@ def edit_request(req_id):
             name = flask_req.form.get(f"item_name_{item.id}")
             qty  = flask_req.form.get(f"item_qty_{item.id}")
             if not name:
-                # If name cleared, delete item
                 req.items.remove(item)
                 db.session.delete(item)
             else:
@@ -147,8 +156,7 @@ def update_status(req_id):
 @admin_bp.route("/jobs")
 def jobs_list():
     pm_tabs = [
-        "Home",
-        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
+        "Home", "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]
@@ -244,7 +252,7 @@ def delete_job(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
-    job = Job.query.get_or_404(job_id)
+    job = Request.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
     completed_reqs  = (
         Request.query
@@ -262,7 +270,7 @@ def job_detail(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
-    job = Job.query.get_or_404(job_id)
+    job = Request.query.get_or_404(job_id)
     reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
     return render_template("admin/job_requests.html", job=job, requests=reqs)
 
