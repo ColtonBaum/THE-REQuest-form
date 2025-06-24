@@ -164,7 +164,7 @@ def jobs_list():
         "Home": (
             Job.query
                .filter_by(archived=False)
-               .order_by(Job.start_date.desc())
+               .order_by(Job.created_at.desc())
                .all()
         )
     }
@@ -172,7 +172,7 @@ def jobs_list():
         jobs_by_pm[pm] = (
             Job.query
                .filter_by(manager=pm, archived=False)
-               .order_by(Job.start_date.desc())
+               .order_by(Job.created_at.desc())
                .all()
         )
     return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
@@ -268,12 +268,7 @@ def job_detail(job_id):
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
     job = Job.query.get_or_404(job_id)
-    reqs = (
-        Request.query
-               .filter_by(job_id=job_id)
-               .order_by(Request.submitted_at.desc())
-               .all()
-    )
+    reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
     return render_template("admin/job_requests.html", job=job, requests=reqs)
 
 
