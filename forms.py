@@ -64,30 +64,21 @@ class JobForm(FlaskForm):
         'Job Number',
         validators=[DataRequired(), Length(max=50)]
     )
-    location = StringField(
-        'Location',
-        validators=[DataRequired(), Length(max=100)]
-    )
+    
     start_date = DateField(
         'Start Date',
         format='%Y-%m-%d',
         validators=[DataRequired()]
     )
-    end_date = DateField(
-        'End Date',
-        format='%Y-%m-%d',
-        validators=[DataRequired()]
-    )
+   
+    
     manager = SelectField(
         'Project Manager',
         choices=PM_TABS,
         validators=[DataRequired()]
     )
-    budget = DecimalField(
-        'Budget',
-        places=2,
-        validators=[DataRequired(), NumberRange(min=0)]
-    )
+   
+    
     submit = SubmitField('Save')
 
 class AssetForm(FlaskForm):

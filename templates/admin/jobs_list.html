@@ -43,9 +43,9 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>Number</th>
-                    <th>Location</th>
+                   
                     <th>Start</th>
-                    <th>End</th>
+                    
                     <th>Manager</th>
                     <th>Actions</th>
                   </tr>
@@ -56,9 +56,9 @@
                     <td>{{ job.id }}</td>
                     <td><a href="{{ url_for('admin.job_detail', job_id=job.id) }}">{{ job.name }}</a></td>
                     <td>{{ job.number }}</td>
-                    <td>{{ job.location }}</td>
+                    
                     <td>{{ job.start_date.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ job.end_date.strftime('%Y-%m-%d') }}</td>
+                    
                     <td>{{ job.manager }}</td>
                     <td class="text-nowrap">
                       <form method="post" action="{{ url_for('admin.archive_job', job_id=job.id) }}" style="display:inline;">

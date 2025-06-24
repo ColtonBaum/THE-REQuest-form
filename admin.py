@@ -191,11 +191,8 @@ def new_job():
         job = Job(
             name       = form.name.data,
             number     = form.number.data,
-            location   = form.location.data,
             start_date = form.start_date.data,
-            end_date   = form.end_date.data,
             manager    = form.manager.data,
-            budget     = form.budget.data,
             status     = "Not started"
         )
         db.session.add(job)
