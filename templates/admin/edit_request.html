@@ -23,6 +23,16 @@
       <input type="text" id="job_number" name="job_number" class="form-control" value="{{ req.job_number }}" required>
     </div>
 
+    <div class="mb-3">
+      <label for="job_id" class="form-label">Reassign to Job</label>
+      <select name="job_id" id="job_id" class="form-select">
+        <option value="">—</option>
+        {% for job in jobs %}
+          <option value="{{ job.id }}" {% if job.id == req.job_id %}selected{% endif %}>{{ job.name }} ({{ job.number }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="mb-3" id="items-container">
       <label class="form-label">Items</label>
       {% for i in req.items %}
@@ -50,16 +60,6 @@
 </div>
 {% endblock %}
 
-<form method="post">
-  <label>Reassign to Job:</label>
-  <select name="job_id">
-    {% for job in jobs %}
-      <option value="{{ job.id }}" {% if job.id == request.job_id %}selected{% endif %}>{{ job.name }} ({{ job.number }})</option>
-    {% endfor %}
-  </select>
-  <button type="submit">Update</button>
-</form>
-
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -72,11 +72,10 @@
       const clone = template.cloneNode(true);
       clone.style.display = 'flex';
       clone.id = '';
-      // update name attributes
       const nameInput = clone.querySelector('input[type="text"]');
       const qtyInput = clone.querySelector('input[type="number"]');
-      nameInput.name = `item_name_new_${newIndex}`;
-      qtyInput.name = `item_qty_new_${newIndex}`;
+      nameInput.name = `new_item_name`;
+      qtyInput.name = `new_item_qty`;
       container.appendChild(clone);
     });
 
