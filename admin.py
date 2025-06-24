@@ -4,14 +4,13 @@ from flask import (
     Blueprint, render_template, request as flask_req,
     redirect, url_for, flash, make_response
 )
-from flask import request
 from sqlalchemy import and_, not_
-from models import db, Request, Job, Asset, RequestItem
-from forms import JobForm, AssetForm
 from sqlalchemy.orm import joinedload, load_only
 
-admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+from models import db, Request, Job, Asset, RequestItem
+from forms import JobForm, AssetForm
 
+admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 # -- Requests Routes ---------------------------------------------------------
 
@@ -43,7 +42,6 @@ def list_requests():
         jobs=jobs
     )
 
-
 @admin_bp.route("/requests/<int:req_id>/delete", methods=["POST"])
 def delete_request(req_id):
     req = Request.query.get_or_404(req_id)
@@ -51,7 +49,6 @@ def delete_request(req_id):
     db.session.commit()
     flash(f"Request #{req_id} deleted.", "danger")
     return redirect(url_for("admin.list_requests"))
-
 
 @admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
 def edit_request(req_id):
@@ -88,12 +85,10 @@ def edit_request(req_id):
 
     return render_template("admin/edit_request.html", req=req)
 
-
 @admin_bp.route("/requests/<int:req_id>")
 def request_detail(req_id):
     req = Request.query.get_or_404(req_id)
     return render_template("admin/request_detail.html", req=req)
-
 
 @admin_bp.route("/requests/<int:req_id>/assign", methods=["POST"])
 def assign_request(req_id):
@@ -104,14 +99,13 @@ def assign_request(req_id):
     flash(f"Request #{req_id} assigned.", "success")
     return redirect(url_for("admin.list_requests"))
 
-
 @admin_bp.route("/requests/<int:req_id>/fulfill", methods=["GET", "POST"])
 def fulfill(req_id):
     req = Request.query.get_or_404(req_id)
     if flask_req.method == "POST":
+        # handle fulfill logic here
         return redirect(url_for("admin.list_requests"))
     return render_template("admin/fulfill_request.html", request=req)
-
 
 @admin_bp.route("/requests/export")
 def export_csv():
@@ -140,7 +134,6 @@ def export_csv():
     resp.headers["Content-Disposition"] = "attachment; filename=requests_export.csv"
     return resp
 
-
 @admin_bp.route("/requests/<int:req_id>/status", methods=["POST"])
 def update_status(req_id):
     req = Request.query.get_or_404(req_id)
@@ -151,11 +144,7 @@ def update_status(req_id):
         flash(f"Request #{req_id} set to “{new}”.", "success")
     return redirect(url_for("admin.list_requests"))
 
-
 # -- Jobs Routes -------------------------------------------------------------
-
-# -- Jobs Routes -------------------------------------------------------------
-
 
 @admin_bp.route("/jobs")
 def jobs_list():
@@ -164,24 +153,10 @@ def jobs_list():
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]
-    jobs_by_pm = {
-        "Home": (
-            Job.query
-               .filter_by(archived=False)
-               .order_by(Job.start_date.desc())
-               .all()
-        )
-    }
+    jobs_by_pm = {"Home": Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()}
     for pm in pm_tabs[1:]:
-        jobs_by_pm[pm] = (
-            Job.query
-               .filter_by(manager=pm, archived=False)
-               .order_by(Job.start_date.desc())
-               .all()
-        )
+        jobs_by_pm[pm] = Job.query.filter_by(manager=pm, archived=False).order_by(Job.start_date.desc()).all()
     return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
-
-
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
 def new_job():
@@ -194,18 +169,17 @@ def new_job():
     form.manager.choices = pm_choices
     if form.validate_on_submit():
         job = Job(
-            name       = form.name.data,
-            number     = form.number.data,
-            start_date = form.start_date.data,
-            manager    = form.manager.data,
-            status     = "Not started"
+            name=form.name.data,
+            number=form.number.data,
+            start_date=form.start_date.data,
+            manager=form.manager.data,
+            status="Not started"
         )
         db.session.add(job)
         db.session.commit()
         flash("New job created.", "success")
         return redirect(url_for("admin.jobs_list"))
     return render_template("admin/job_form.html", form=form, job=None)
-
 
 @admin_bp.route("/jobs/<int:job_id>/edit", methods=["GET", "POST"])
 def edit_job(job_id):
@@ -224,7 +198,6 @@ def edit_job(job_id):
         return redirect(url_for("admin.jobs_list"))
     return render_template("admin/job_form.html", form=form, job=job)
 
-
 @admin_bp.route("/jobs/<int:job_id>/assign_manager", methods=["POST"])
 def assign_manager(job_id):
     job = Job.query.get_or_404(job_id)
@@ -232,7 +205,6 @@ def assign_manager(job_id):
     db.session.commit()
     flash(f"Job #{job_id} re-assigned to {job.manager}.", "success")
     return redirect(url_for("admin.jobs_list"))
-
 
 @admin_bp.route("/jobs/<int:job_id>/archive", methods=["POST"])
 def archive_job(job_id):
@@ -242,7 +214,6 @@ def archive_job(job_id):
     flash("Job archived.", "warning")
     return redirect(url_for("admin.jobs_list"))
 
-
 @admin_bp.route("/jobs/<int:job_id>/delete", methods=["POST"])
 def delete_job(job_id):
     job = Job.query.get_or_404(job_id)
@@ -251,17 +222,11 @@ def delete_job(job_id):
     flash(f"Job '{job.name}' deleted.", "danger")
     return redirect(url_for("admin.jobs_list"))
 
-
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
-    completed_reqs  = (
-        Request.query
-               .filter_by(job_id=job_id, status="Complete")
-               .order_by(Request.submitted_at.desc())
-               .all()
-    )
+    completed_reqs = Request.query.filter_by(job_id=job_id, status="Complete").order_by(Request.submitted_at.desc()).all()
     return render_template(
         "admin/job_detail.html",
         job=job,
@@ -269,13 +234,11 @@ def job_detail(job_id):
         completed_reqs=completed_reqs
     )
 
-
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
     job = Job.query.get_or_404(job_id)
     reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
     return render_template("admin/job_requests.html", job=job, requests=reqs)
-
 
 @admin_bp.route("/jobs/<int:job_id>/assets")
 def job_assets(job_id):
@@ -283,22 +246,11 @@ def job_assets(job_id):
     assets = Asset.query.filter_by(current_job_id=job_id).all()
     return render_template("admin/job_assets.html", job=job, assets=assets)
 
-
-
-
 # -- Assets Routes -----------------------------------------------------------
 
 @admin_bp.route("/assets")
 def assets_list():
-    jobs = Job.query \
-              .filter_by(archived=False) \
-              .order_by(Job.start_date.desc()) \
-              .all()
-    assets = Asset.query.all()
-    return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
-
-
-    # load assets, but when SQLAlchemy joins current_job, only select the columns we know exist
+    jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
     assets = (
         Asset.query
              .options(
@@ -308,20 +260,17 @@ def assets_list():
              )
              .all()
     )
-
     return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
-
-
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
     form = AssetForm()
     if form.validate_on_submit():
         new_asset = Asset(
-            group         = form.group.data,
-            type          = form.type.data,
-            identifier    = form.identifier.data,
-            serial_number = form.serial_number.data
+            group=form.group.data,
+            type=form.type.data,
+            identifier=form.identifier.data,
+            serial_number=form.serial_number.data
         )
         db.session.add(new_asset)
         db.session.commit()
@@ -329,20 +278,18 @@ def assets_new():
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=None)
 
-
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
-    form  = AssetForm(obj=asset)
+    form = AssetForm(obj=asset)
     if form.validate_on_submit():
-        asset.group         = form.group.data
-        asset.identifier    = form.identifier.data
+        asset.group = form.group.data
+        asset.identifier = form.identifier.data
         asset.serial_number = form.serial_number.data
         db.session.commit()
         flash("Asset updated.", "success")
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=asset)
-
 
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
@@ -352,7 +299,6 @@ def assign_asset(asset_id):
     db.session.commit()
     return redirect(flask_req.referrer)
 
-
 @admin_bp.route("/assets/<int:asset_id>/unassign", methods=["POST"])
 def unassign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
@@ -360,15 +306,9 @@ def unassign_asset(asset_id):
     db.session.commit()
     return redirect(flask_req.referrer)
 
-
 # -- Reports Routes ---------------------------------------------------------
 
 @admin_bp.route("/reports")
 def reports():
-    archived_jobs = (
-        Job.query
-           .filter_by(archived=True)
-           .order_by(Job.start_date.desc())
-           .all()
-    )
+    archived_jobs = Job.query.filter_by(archived=True).order_by(Job.start_date.desc()).all()
     return render_template("admin/reports.html", jobs=archived_jobs)
