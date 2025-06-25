@@ -4,52 +4,16 @@ from flask import (
     Blueprint, render_template, request as flask_req,
     redirect, url_for, flash, make_response
 )
+from flask_wtf.csrf import csrf_exempt
 from sqlalchemy import and_, not_
-from sqlalchemy.orm import joinedload, load_only
+from sqlalchemy.orm import joinedload
 
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
-from app import csrf
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 # -- Requests Routes ---------------------------------------------------------
-
-@csrf.exempt
-@admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
-def edit_request(req_id):
-    req = Request.query.get_or_404(req_id)
-    if flask_req.method == "POST":
-        # Update core fields
-        req.employee_name = flask_req.form["employee_name"]
-        req.job_name      = flask_req.form["job_name"]
-        req.job_number    = flask_req.form["job_number"]
-        req.need_by_date  = flask_req.form["need_by_date"]
-
-        # Update or remove existing items
-        for item in list(req.items):
-            name = flask_req.form.get(f"item_name_{item.id}")
-            qty  = flask_req.form.get(f"item_qty_{item.id}")
-            if not name:
-                req.items.remove(item)
-                db.session.delete(item)
-            else:
-                item.item_name = name
-                if qty and qty.isdigit():
-                    item.quantity = int(qty)
-
-        # Add new items
-        new_names = flask_req.form.getlist("new_item_name")
-        new_qtys  = flask_req.form.getlist("new_item_qty")
-        for name, qty in zip(new_names, new_qtys):
-            if name and qty.isdigit():
-                req.items.append(RequestItem(item_name=name, quantity=int(qty)))
-
-        db.session.commit()
-        flash("Request updated successfully.", "success")
-        return redirect(url_for("admin.list_requests"))
-
-    return render_template("admin/edit_request.html", req=req)
 
 @admin_bp.route("/requests")
 def list_requests():
@@ -87,6 +51,42 @@ def delete_request(req_id):
     flash(f"Request #{req_id} deleted.", "danger")
     return redirect(url_for("admin.list_requests"))
 
+@admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
+@csrf_exempt
+def edit_request(req_id):
+    req = Request.query.get_or_404(req_id)
+    if flask_req.method == "POST":
+        # Update core fields
+        req.employee_name = flask_req.form["employee_name"]
+        req.job_name      = flask_req.form["job_name"]
+        req.job_number    = flask_req.form["job_number"]
+        req.need_by_date  = flask_req.form["need_by_date"]
+
+        # Update or remove existing items
+        for item in list(req.items):
+            name = flask_req.form.get(f"item_name_{item.id}")
+            qty  = flask_req.form.get(f"item_qty_{item.id}")
+            if not name:
+                req.items.remove(item)
+                db.session.delete(item)
+            else:
+                item.item_name = name
+                if qty and qty.isdigit():
+                    item.quantity = int(qty)
+
+        # Add new items
+        new_names = flask_req.form.getlist("new_item_name")
+        new_qtys  = flask_req.form.getlist("new_item_qty")
+        for name, qty in zip(new_names, new_qtys):
+            if name and qty.isdigit():
+                req.items.append(RequestItem(item_name=name, quantity=int(qty)))
+
+        db.session.commit()
+        flash("Request updated successfully.", "success")
+        return redirect(url_for("admin.list_requests"))
+
+    return render_template("admin/edit_request.html", req=req)
+
 @admin_bp.route("/requests/<int:req_id>")
 def request_detail(req_id):
     req = Request.query.get_or_404(req_id)
@@ -118,16 +118,16 @@ def export_csv():
         "Need by Date", "Submitted At", "Status",
         "Item Name", "Quantity"
     ])
-    for req in Request.query.order_by(Request.submitted_at):
-        for item in req.items:
+    for r in Request.query.order_by(Request.submitted_at):
+        for item in r.items:
             writer.writerow([
-                req.id,
-                req.employee_name,
-                req.job_name,
-                req.job_number,
-                req.need_by_date,
-                req.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
-                req.status,
+                r.id,
+                r.employee_name,
+                r.job_name,
+                r.job_number,
+                r.need_by_date,
+                r.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
+                r.status,
                 item.item_name,
                 item.quantity,
             ])
@@ -155,10 +155,14 @@ def jobs_list():
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]
-    jobs_by_pm = {"Home": Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()}
+    jobs_by_pm = {"Home": Job.query.filter_by(archived=False)
+                              .order_by(Job.start_date.desc()).all()}
     for pm in pm_tabs[1:]:
-        jobs_by_pm[pm] = Job.query.filter_by(manager=pm, archived=False).order_by(Job.start_date.desc()).all()
-    return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
+        jobs_by_pm[pm] = Job.query.filter_by(manager=pm, archived=False) \
+                                   .order_by(Job.start_date.desc()).all()
+    return render_template("admin/jobs_list.html",
+                           pm_tabs=pm_tabs,
+                           jobs_by_pm=jobs_by_pm)
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
 def new_job():
@@ -228,8 +232,10 @@ def delete_job(job_id):
 def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
-    completed_reqs = Request.query.filter_by(job_id=job_id, status="Complete").order_by(Request.submitted_at.desc()).all()
-    jobs = Job.query.order_by(Job.start_date.desc()).all()
+    completed_reqs = Request.query.filter_by(
+        job_id=job_id, status="Complete"
+    ).order_by(Request.submitted_at.desc()).all()
+    jobs = Job.query.order_by(Job.start_date.desc()).all()  # for reassignment dropdown
     return render_template(
         "admin/job_detail.html",
         job=job,
@@ -241,7 +247,8 @@ def job_detail(job_id):
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
     job = Job.query.get_or_404(job_id)
-    reqs = Request.query.filter_by(job_id=job_id).order_by(Request.submitted_at.desc()).all()
+    reqs = Request.query.filter_by(job_id=job_id) \
+                        .order_by(Request.submitted_at.desc()).all()
     return render_template("admin/job_requests.html", job=job, requests=reqs)
 
 @admin_bp.route("/jobs/<int:job_id>/assets")
@@ -250,94 +257,8 @@ def job_assets(job_id):
     assets = Asset.query.filter_by(current_job_id=job_id).all()
     return render_template("admin/job_assets.html", job=job, assets=assets)
 
-@admin_bp.route("/requests/<int:request_id>/edit_job", methods=["GET", "POST"])
-def edit_request_job(request_id):
-    req = Request.query.get_or_404(request_id)
-    jobs = Job.query.all()
-    if flask_req.method == "POST":
-        req.job_id = flask_req.form["job_id"]
-        db.session.commit()
-        flash("Job assignment updated.", "success")
-        return redirect(url_for("admin.jobs_list"))
-    return render_template("admin/edit_request_job.html", request=req, jobs=jobs)
-
-# -- Assets Routes -----------------------------------------------------------
-
-CATEGORIES = [
-    ("LN",                "LN"),
-    ("Flatbed trailer",   "Flatbed trailer"),
-    ("Tool Trailer",      "Tool Trailer"),
-    ("Welder",            "Welder"),
-    ("Specialty",         "Specialty"),
-    ("Tool shack",        "Tool shack"),
-    ("Gang Box",          "Gang Box"),
-    ("Utility Trailer",   "Utility Trailer"),
-    ("Semi Tool Trailer", "Semi Tool Trailer"),
-]
-
-@admin_bp.route("/assets")
-def assets_list():
-    jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
-    assets = (
-        Asset.query
-             .options(joinedload(Asset.current_job))
-             .all()
-    )
-    return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
-
-@admin_bp.route("/assets/new", methods=["GET", "POST"])
-def assets_new():
-    form = AssetForm()
-    form.group.choices = CATEGORIES
-
-    if form.validate_on_submit():
-        new_asset = Asset(
-            type          = form.group.data,
-            group         = form.group.data,
-            identifier    = form.identifier.data,
-            serial_number = form.serial_number.data,
-        )
-        db.session.add(new_asset)
-        db.session.commit()
-        flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.", "success")
-        return redirect(url_for("admin.assets_list"))
-
-    return render_template("admin/asset_form.html", form=form, asset=None)
-
-@admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
-def edit_asset(asset_id):
-    asset = Asset.query.get_or_404(asset_id)
-    form = AssetForm(obj=asset)
-    form.group.choices = CATEGORIES
-
-    if form.validate_on_submit():
-        asset.type          = form.group.data
-        asset.group         = form.group.data
-        asset.identifier    = form.identifier.data
-        asset.serial_number = form.serial_number.data
-        db.session.commit()
-        flash("Asset updated.", "success")
-        return redirect(url_for("admin.assets_list"))
-
-    return render_template("admin/asset_form.html", form=form, asset=asset)
-
-@admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
-def assign_asset(asset_id):
-    asset = Asset.query.get_or_404(asset_id)
-    job_id = flask_req.form.get("job_id") or None
-    asset.current_job_id = job_id
-    db.session.commit()
-    return redirect(flask_req.referrer)
-
-@admin_bp.route("/assets/<int:asset_id>/unassign", methods=["POST"])
-def unassign_asset(asset_id):
-    asset = Asset.query.get_or_404(asset_id)
-    asset.current_job_id = None
-    db.session.commit()
-    return redirect(flask_req.referrer)
-
-# -- Reports Routes ---------------------------------------------------------
 @admin_bp.route("/reports")
 def reports():
-    archived_jobs = Job.query.filter_by(archived=True).order_by(Job.start_date.desc()).all()
+    archived_jobs = Job.query.filter_by(archived=True) \
+                             .order_by(Job.start_date.desc()).all()
     return render_template("admin/reports.html", jobs=archived_jobs)
