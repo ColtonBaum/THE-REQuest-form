@@ -4,12 +4,12 @@ from flask import (
     Blueprint, render_template, request as flask_req,
     redirect, url_for, flash, make_response
 )
-from flask_wtf.csrf import csrf_exempt
 from sqlalchemy import and_, not_
 from sqlalchemy.orm import joinedload
 
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
+from app import csrf  # import your CSRFProtect instance
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -51,8 +51,8 @@ def delete_request(req_id):
     flash(f"Request #{req_id} deleted.", "danger")
     return redirect(url_for("admin.list_requests"))
 
+@csrf.exempt
 @admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
-@csrf_exempt
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
     if flask_req.method == "POST":
