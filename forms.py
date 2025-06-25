@@ -1,5 +1,3 @@
-# forms.py
-
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField, SelectField, DateField, DecimalField, SubmitField,
@@ -64,39 +62,29 @@ class JobForm(FlaskForm):
         'Job Number',
         validators=[DataRequired(), Length(max=50)]
     )
-    
     start_date = DateField(
         'Start Date',
         format='%Y-%m-%d',
         validators=[DataRequired()]
     )
-   
-    
     manager = SelectField(
         'Project Manager',
         choices=PM_TABS,
         validators=[DataRequired()]
     )
-   
-    
     submit = SubmitField('Save')
 
 class AssetForm(FlaskForm):
     group = SelectField(
-        "Group",
+        "Category",
         choices=[
-            ("Welder", "Welder"),
             ("LN", "LN"),
+            ("Flatbed trailer", "Flatbed trailer"),
             ("Tool Trailer", "Tool Trailer"),
-            ("Flat Bed Trailer", "Flat Bed Trailer"),
-            ("Specialty Tooling", "Specialty Tooling"),
+            ("Welder", "Welder"),
+            ("Specialty", "Specialty"),
         ],
         validators=[DataRequired()]
-    )
-    type = StringField(
-        "Asset Type",
-        validators=[DataRequired(), Length(max=100)],
-        render_kw={"placeholder": "e.g. Trailer, Vehicle…"}
     )
     identifier = StringField(
         "Identifier",
