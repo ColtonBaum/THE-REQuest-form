@@ -266,12 +266,17 @@ def edit_request_job(request_id):
 # -- Assets Routes -----------------------------------------------------------
 
 CATEGORIES = [
-    ("LN", "LN"),
-    ("Flatbed trailer", "Flatbed trailer"),
-    ("Tool Trailer", "Tool Trailer"),
-    ("Welder", "Welder"),
-    ("Specialty", "Specialty"),
+    ("LN",                "LN"),
+    ("Flatbed trailer",   "Flatbed trailer"),
+    ("Tool Trailer",      "Tool Trailer"),
+    ("Welder",            "Welder"),
+    ("Specialty",         "Specialty"),
+    ("Tool shack",        "Tool shack"),
+    ("Gang Box",          "Gang Box"),
+    ("Utility Trailer",   "Utility Trailer"),
+    ("Semi Tool Trailer", "Semi Tool Trailer"),
 ]
+
 
 @admin_bp.route("/assets")
 def assets_list():
