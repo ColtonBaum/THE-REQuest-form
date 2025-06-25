@@ -264,13 +264,23 @@ def edit_request_job(request_id):
 
 # -- Assets Routes -----------------------------------------------------------
 
+# -- Assets Routes -----------------------------------------------------------
+
+CATEGORIES = [
+    ("LN", "LN"),
+    ("Flatbed trailer", "Flatbed trailer"),
+    ("Tool Trailer", "Tool Trailer"),
+    ("Welder", "Welder"),
+    ("Specialty", "Specialty"),
+]
+
 @admin_bp.route("/assets")
 def assets_list():
     jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
     assets = (
         Asset.query
              .options(
-                 joinedload(Asset.current_job)  # Removed .load_only(...)
+                 joinedload(Asset.current_job)
              )
              .all()
     )
@@ -280,19 +290,14 @@ def assets_list():
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
     form = AssetForm()
-
-    # IMPORTANT: give it at least one valid choice before validation
-    form.group.choices = [
-        ("Tools", "Tools"),
-        ("Vehicles", "Vehicles"),
-        ("Electronics", "Electronics"),
-    ]
+    # Populate the dropdown with your five categories
+    form.group.choices = CATEGORIES
 
     if form.validate_on_submit():
         new_asset = Asset(
             group         = form.group.data,
             identifier    = form.identifier.data,
-            serial_number = form.serial_number.data,
+            serial_number = form.serial_number.data
         )
         db.session.add(new_asset)
         db.session.commit()
@@ -306,14 +311,19 @@ def assets_new():
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     form = AssetForm(obj=asset)
+    # Same choices so editing works
+    form.group.choices = CATEGORIES
+
     if form.validate_on_submit():
-        asset.group = form.group.data
-        asset.identifier = form.identifier.data
+        asset.group         = form.group.data
+        asset.identifier    = form.identifier.data
         asset.serial_number = form.serial_number.data
         db.session.commit()
         flash("Asset updated.", "success")
         return redirect(url_for("admin.assets_list"))
+
     return render_template("admin/asset_form.html", form=form, asset=asset)
+
 
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
@@ -323,12 +333,14 @@ def assign_asset(asset_id):
     db.session.commit()
     return redirect(flask_req.referrer)
 
+
 @admin_bp.route("/assets/<int:asset_id>/unassign", methods=["POST"])
 def unassign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     asset.current_job_id = None
     db.session.commit()
     return redirect(flask_req.referrer)
+
 
 # -- Reports Routes ---------------------------------------------------------
 
