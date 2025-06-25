@@ -83,6 +83,10 @@ class AssetForm(FlaskForm):
             ("Tool Trailer", "Tool Trailer"),
             ("Welder", "Welder"),
             ("Specialty", "Specialty"),
+            ("Tool shack", "Tool shack"),
+            ("Gang Box", "Gang Box"),
+            ("Utility Trailer", "Utility Trailer"),
+            ("Semi Tool Trailer", "Semi Tool Trailer"),
         ],
         validators=[DataRequired()]
     )
