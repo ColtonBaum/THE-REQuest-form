@@ -263,7 +263,6 @@ def edit_request_job(request_id):
 
 
 # -- Assets Routes -----------------------------------------------------------
-
 # -- Assets Routes -----------------------------------------------------------
 
 CATEGORIES = [
@@ -279,9 +278,7 @@ def assets_list():
     jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
     assets = (
         Asset.query
-             .options(
-                 joinedload(Asset.current_job)
-             )
+             .options(joinedload(Asset.current_job))
              .all()
     )
     return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
@@ -290,14 +287,14 @@ def assets_list():
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
     form = AssetForm()
-    # Populate the dropdown with your five categories
     form.group.choices = CATEGORIES
 
     if form.validate_on_submit():
         new_asset = Asset(
+            type          = form.group.data,
             group         = form.group.data,
             identifier    = form.identifier.data,
-            serial_number = form.serial_number.data
+            serial_number = form.serial_number.data,
         )
         db.session.add(new_asset)
         db.session.commit()
@@ -311,10 +308,10 @@ def assets_new():
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     form = AssetForm(obj=asset)
-    # Same choices so editing works
     form.group.choices = CATEGORIES
 
     if form.validate_on_submit():
+        asset.type          = form.group.data
         asset.group         = form.group.data
         asset.identifier    = form.identifier.data
         asset.serial_number = form.serial_number.data
@@ -340,6 +337,7 @@ def unassign_asset(asset_id):
     asset.current_job_id = None
     db.session.commit()
     return redirect(flask_req.referrer)
+
 
 
 # -- Reports Routes ---------------------------------------------------------
