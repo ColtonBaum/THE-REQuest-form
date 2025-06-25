@@ -280,18 +280,27 @@ def assets_list():
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
     form = AssetForm()
+
+    # IMPORTANT: give it at least one valid choice before validation
+    form.group.choices = [
+        ("Tools", "Tools"),
+        ("Vehicles", "Vehicles"),
+        ("Electronics", "Electronics"),
+    ]
+
     if form.validate_on_submit():
         new_asset = Asset(
-            group=form.group.data,
-            type=form.type.data,
-            identifier=form.identifier.data,
-            serial_number=form.serial_number.data
+            group         = form.group.data,
+            identifier    = form.identifier.data,
+            serial_number = form.serial_number.data,
         )
         db.session.add(new_asset)
         db.session.commit()
-        flash(f"Asset “{new_asset.group} – {new_asset.type}” created.", "success")
+        flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.", "success")
         return redirect(url_for("admin.assets_list"))
+
     return render_template("admin/asset_form.html", form=form, asset=None)
+
 
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
