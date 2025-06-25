@@ -57,12 +57,10 @@ csrf = CSRFProtect(app)
 # Make {{ csrf_token() }} available in all templates
 app.jinja_env.globals['csrf_token'] = generate_csrf
 
-# ————————————————
-# Now import your admin blueprint (after CSRF is ready)
-# ————————————————
+# Import admin blueprint and the view to exempt
 from admin import admin_bp, edit_request
 
-# Exempt just the edit_request view from CSRF
+# Exempt only the edit_request endpoint from CSRF
 csrf.exempt(edit_request)
 
 # ————————————————

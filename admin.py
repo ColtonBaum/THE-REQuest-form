@@ -9,7 +9,7 @@ from sqlalchemy.orm import joinedload
 
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm
-from app import csrf  # import your CSRFProtect instance
+from app import csrf  # your CSRFProtect instance
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -17,7 +17,6 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 @admin_bp.route("/requests")
 def list_requests():
-    # exclude requests that are both assigned and complete
     all_reqs = (
         Request.query
                .filter(
@@ -51,6 +50,7 @@ def delete_request(req_id):
     flash(f"Request #{req_id} deleted.", "danger")
     return redirect(url_for("admin.list_requests"))
 
+# exempt CSRF only on this one view
 @csrf.exempt
 @admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
 def edit_request(req_id):
@@ -146,6 +146,7 @@ def update_status(req_id):
         flash(f"Request #{req_id} set to “{new}”.", "success")
     return redirect(url_for("admin.list_requests"))
 
+
 # -- Jobs Routes -------------------------------------------------------------
 
 @admin_bp.route("/jobs")
@@ -155,11 +156,17 @@ def jobs_list():
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]
-    jobs_by_pm = {"Home": Job.query.filter_by(archived=False)
-                              .order_by(Job.start_date.desc()).all()}
+    jobs_by_pm = {
+        "Home": Job.query.filter_by(archived=False)
+                          .order_by(Job.start_date.desc()).all()
+    }
     for pm in pm_tabs[1:]:
-        jobs_by_pm[pm] = Job.query.filter_by(manager=pm, archived=False) \
-                                   .order_by(Job.start_date.desc()).all()
+        jobs_by_pm[pm] = (
+            Job.query
+               .filter_by(manager=pm, archived=False)
+               .order_by(Job.start_date.desc())
+               .all()
+        )
     return render_template("admin/jobs_list.html",
                            pm_tabs=pm_tabs,
                            jobs_by_pm=jobs_by_pm)
@@ -232,9 +239,12 @@ def delete_job(job_id):
 def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
-    completed_reqs = Request.query.filter_by(
-        job_id=job_id, status="Complete"
-    ).order_by(Request.submitted_at.desc()).all()
+    completed_reqs = (
+        Request.query
+               .filter_by(job_id=job_id, status="Complete")
+               .order_by(Request.submitted_at.desc())
+               .all()
+    )
     jobs = Job.query.order_by(Job.start_date.desc()).all()  # for reassignment dropdown
     return render_template(
         "admin/job_detail.html",
@@ -247,8 +257,12 @@ def job_detail(job_id):
 @admin_bp.route("/jobs/<int:job_id>/requests")
 def job_requests(job_id):
     job = Job.query.get_or_404(job_id)
-    reqs = Request.query.filter_by(job_id=job_id) \
-                        .order_by(Request.submitted_at.desc()).all()
+    reqs = (
+        Request.query
+               .filter_by(job_id=job_id)
+               .order_by(Request.submitted_at.desc())
+               .all()
+    )
     return render_template("admin/job_requests.html", job=job, requests=reqs)
 
 @admin_bp.route("/jobs/<int:job_id>/assets")
@@ -259,6 +273,10 @@ def job_assets(job_id):
 
 @admin_bp.route("/reports")
 def reports():
-    archived_jobs = Job.query.filter_by(archived=True) \
-                             .order_by(Job.start_date.desc()).all()
+    archived_jobs = (
+        Job.query
+           .filter_by(archived=True)
+           .order_by(Job.start_date.desc())
+           .all()
+    )
     return render_template("admin/reports.html", jobs=archived_jobs)
