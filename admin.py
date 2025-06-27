@@ -244,6 +244,7 @@ def assets_new():
     form = AssetForm()
     if form.validate_on_submit():
         new_asset = Asset(
+            type          = form.group.data,       # ◀ populate `type` from dropdown
             group         = form.group.data,
             identifier    = form.identifier.data,
             serial_number = form.serial_number.data
@@ -259,8 +260,9 @@ def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     form = AssetForm(obj=asset)
     if form.validate_on_submit():
-        asset.group = form.group.data
-        asset.identifier = form.identifier.data
+        asset.type          = form.group.data    # ◀ keep `type` in sync
+        asset.group         = form.group.data
+        asset.identifier    = form.identifier.data
         asset.serial_number = form.serial_number.data
         db.session.commit()
         flash("Asset updated.", "success")
