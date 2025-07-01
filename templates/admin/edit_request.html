@@ -9,7 +9,7 @@
   <form method="post">
     {{ form.hidden_tag() }}
 
-    {# show any validation errors #}
+    {# Show validation errors #}
     {% if form.errors %}
     <div class="alert alert-danger">
       <ul class="mb-0">
@@ -59,8 +59,7 @@
 
     <div class="mt-4">
       <button type="submit" class="btn btn-primary">Save Changes</button>
-      <a href="{{ url_for('admin.list_requests') }}"
-         class="btn btn-secondary ms-2">Cancel</a>
+      <a href="{{ url_for('admin.list_requests') }}" class="btn btn-secondary ms-2">Cancel</a>
     </div>
   </form>
 </div>
@@ -70,22 +69,33 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('items-container');
-    const btn = document.getElementById('add-item-btn');
+    const addBtn    = document.getElementById('add-item-btn');
 
-    btn.addEventListener('click', () => {
-      // clone the last item-row, clear its inputs, append
-      const last = container.querySelector('.item-row:last-child');
+    addBtn.addEventListener('click', () => {
+      const rows = container.querySelectorAll('.item-row');
+      const last = rows[rows.length - 1];
       const clone = last.cloneNode(true);
-      clone.querySelector('input[name$="item_name"]').value = '';
-      clone.querySelector('input[name$="quantity"]').value = '';
+
+      const newIndex = rows.length;
+      const nameInput = clone.querySelector('input[name$="item_name"]');
+      const qtyInput  = clone.querySelector('input[name$="quantity"]');
+
+      // re-index names: items-<n>-item_name, items-<n>-quantity
+      nameInput.name = `items-${newIndex}-item_name`;
+      qtyInput.name  = `items-${newIndex}-quantity`;
+
+      // clear values
+      nameInput.value = '';
+      qtyInput.value  = '';
+
       container.appendChild(clone);
     });
 
     container.addEventListener('click', e => {
       if (e.target.classList.contains('remove-item')) {
-        const row = e.target.closest('.item-row');
-        if (container.querySelectorAll('.item-row').length > 1) {
-          row.remove();
+        const rows = container.querySelectorAll('.item-row');
+        if (rows.length > 1) {
+          e.target.closest('.item-row').remove();
         }
       }
     });

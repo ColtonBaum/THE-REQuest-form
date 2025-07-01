@@ -54,29 +54,29 @@ def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
     form = RequestForm(obj=req)
 
-    # On GET: clear the default one entry, then append one per existing item
+    # On GET: clear WTForms' default entry then append one per existing item
     if flask_req.method == "GET":
         form.items.entries = []
         for item in req.items:
             form.items.append_entry({
-                'item_name': item.item_name,
-                'quantity': item.quantity
+                "item_name": item.item_name,
+                "quantity":  item.quantity
             })
 
     if form.validate_on_submit():
-        # update core fields
+        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
 
-        # replace items wholesale
+        # Rebuild item list
         req.items.clear()
-        for item_data in form.items.data:
+        for entry in form.items.data:
             req.items.append(
                 RequestItem(
-                    item_name = item_data['item_name'],
-                    quantity  = item_data['quantity']
+                    item_name = entry["item_name"],
+                    quantity  = entry["quantity"]
                 )
             )
 
@@ -84,7 +84,7 @@ def edit_request(req_id):
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
-    # re-fetch jobs for the “reassign” dropdown
+    # Needed for the “reassign” dropdown
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template("admin/edit_request.html", form=form, req=req, jobs=jobs)
 
@@ -166,17 +166,21 @@ def jobs_list():
                          .order_by(Job.start_date.desc()).all()
     }
     for pm in pm_tabs[1:]:
-        jobs_by_pm[pm] = Job.query.filter_by(manager=pm, archived=False) \
-                                   .order_by(Job.start_date.desc()).all()
+        jobs_by_pm[pm] = (
+            Job.query
+               .filter_by(manager=pm, archived=False)
+               .order_by(Job.start_date.desc())
+               .all()
+        )
     return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
 
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
 def new_job():
     pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle","Kade Evans","Dan Lewis","Jacob McNeil",
-        "Tiffany Chastain","Josh Walsh","Tayson Scott",
-        "Nate's Projects","Other"
+        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
+        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
+        "Nate's Projects", "Other"
     ]]
     form = JobForm()
     form.manager.choices = pm_choices
@@ -199,9 +203,9 @@ def new_job():
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
     pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle","Kade Evans","Dan Lewis","Jacob McNeil",
-        "Tiffany Chastain","Josh Walsh","Tayson Scott",
-        "Nate's Projects","Other"
+        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
+        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
+        "Nate's Projects", "Other"
     ]]
     form = JobForm(obj=job)
     form.manager.choices = pm_choices
@@ -224,7 +228,7 @@ def assign_manager(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>/archive", methods=["POST"])
 def archive_job(job_id):
-    job = Job.query.get_or_404(job_id)
+    job = Request.query.get_or_404(job_id)
     job.archived = True
     db.session.commit()
     flash("Job archived.", "warning")
@@ -244,9 +248,12 @@ def delete_job(job_id):
 def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
-    completed_reqs = Request.query.filter_by(
-        job_id=job_id, status="Complete"
-    ).order_by(Request.submitted_at.desc()).all()
+    completed_reqs = (
+        Request.query
+               .filter_by(job_id=job_id, status="Complete")
+               .order_by(Request.submitted_at.desc())
+               .all()
+    )
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template(
         "admin/job_detail.html",
