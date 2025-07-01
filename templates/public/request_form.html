@@ -43,6 +43,12 @@
         </div>
         <button type="button" id="add-item" class="btn btn-sm btn-outline-secondary">+ Add another item</button>
 
+        <!-- Notes Section -->
+        <div class="mb-3 mt-4">
+          {{ form.notes.label(class="form-label") }}
+          {{ form.notes(class="form-control") }}
+        </div>
+
         <div class="text-center mt-4">
           {{ form.submit(class="btn btn-primary") }}
         </div>

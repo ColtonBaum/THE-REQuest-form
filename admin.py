@@ -3,7 +3,7 @@ import io
 
 from flask import (
     Blueprint, render_template, request as flask_req,
-    redirect, url_for, flash, make_response
+    redirect, url_for, flash, make_response, current_app
 )
 from sqlalchemy import and_, not_
 from sqlalchemy.orm import joinedload
@@ -55,8 +55,7 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # Quick fix for Option 1: if need_by_date is stored as a string,
-    # convert it to a datetime.date so WTForms can render it properly.
+    # Quick fix: parse need_by_date if stored as string
     if isinstance(req.need_by_date, str) and req.need_by_date:
         try:
             req.need_by_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
@@ -65,7 +64,7 @@ def edit_request(req_id):
 
     form = RequestForm(obj=req)
 
-    # On GET: clear default and load existing items
+    # On GET: load existing items
     if flask_req.method == "GET":
         form.items.entries = []
         for item in req.items:
@@ -80,6 +79,7 @@ def edit_request(req_id):
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
+        req.notes         = form.notes.data
 
         # Rebuild items wholesale
         req.items.clear()
@@ -92,14 +92,18 @@ def edit_request(req_id):
             )
 
         db.session.commit()
-        (
+
+        # Log saved values
+        current_app.logger.info(
             f"💾 Saved Request #{req.id}: "
             f"employee_name={req.employee_name!r}, "
             f"job_name={req.job_name!r}, "
             f"job_number={req.job_number!r}, "
             f"need_by_date={req.need_by_date!r}, "
-            f"items={[ (i.item_name,i.quantity) for i in req.items ]!r}"
+            f"notes={req.notes!r}, "
+            f"items={[ (i.item_name, i.quantity) for i in req.items ]!r}"
         )
+
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
@@ -140,7 +144,7 @@ def export_csv():
     writer = csv.writer(output)
     writer.writerow([
         "Req ID", "Employee Name", "Job Name", "Job Number",
-        "Need by Date", "Submitted At", "Status",
+        "Need by Date", "Submitted At", "Status", "Notes",
         "Item Name", "Quantity"
     ])
     for r in Request.query.order_by(Request.submitted_at):
@@ -153,6 +157,7 @@ def export_csv():
                 r.need_by_date,
                 r.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
                 r.status,
+                r.notes,
                 item.item_name,
                 item.quantity,
             ])

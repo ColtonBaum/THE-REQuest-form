@@ -57,6 +57,12 @@
       + Add Item
     </button>
 
+    <!-- Notes Section -->
+    <div class="mb-3">
+      {{ form.notes.label(class="form-label") }}
+      {{ form.notes(class="form-control") }}
+    </div>
+
     <div class="mt-4">
       <button type="submit" class="btn btn-primary">Save Changes</button>
       <a href="{{ url_for('admin.list_requests') }}" class="btn btn-secondary ms-2">Cancel</a>

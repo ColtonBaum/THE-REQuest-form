@@ -8,7 +8,8 @@ from wtforms import (
     SubmitField,
     IntegerField,
     FieldList,
-    FormField
+    FormField,
+    TextAreaField,    # for notes section
 )
 from wtforms.validators import DataRequired, NumberRange, Length, Optional
 
@@ -58,6 +59,11 @@ class RequestForm(FlaskForm):
     items = FieldList(
         FormField(RequestItemForm),
         min_entries=1
+    )
+    notes = TextAreaField(
+        'Notes',
+        validators=[Optional(), Length(max=1000)],
+        render_kw={"rows": 3, "placeholder": "Any special instructions or comments…"}
     )
     submit = SubmitField('Submit Request')
 
