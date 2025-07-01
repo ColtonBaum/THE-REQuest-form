@@ -92,6 +92,14 @@ def edit_request(req_id):
             )
 
         db.session.commit()
+        (
+            f"💾 Saved Request #{req.id}: "
+            f"employee_name={req.employee_name!r}, "
+            f"job_name={req.job_name!r}, "
+            f"job_number={req.job_number!r}, "
+            f"need_by_date={req.need_by_date!r}, "
+            f"items={[ (i.item_name,i.quantity) for i in req.items ]!r}"
+        )
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
