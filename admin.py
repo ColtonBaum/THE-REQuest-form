@@ -20,24 +20,26 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 def list_requests():
     all_reqs = (
         Request.query
-               .filter(
-                   not_(
-                       and_(
-                           Request.status == "Complete",
-                           Request.job_id.isnot(None)
-                       )
-                   )
-               )
-               .order_by(Request.submitted_at.desc())
-               .all()
+        .filter(
+            not_(
+                and_(
+                    Request.status == "Complete",
+                    Request.job_id.isnot(None),
+                )
+            )
+        )
+        .order_by(Request.submitted_at.desc())
+        .all()
     )
     jobs = (
         Job.query
-           .filter_by(archived=False)
-           .order_by(Job.start_date.desc())
-           .all()
+        .filter_by(archived=False)
+        .order_by(Job.start_date.desc())
+        .all()
     )
-    return render_template("admin/requests_list.html", requests=all_reqs, jobs=jobs)
+    return render_template("admin/requests_list.html",
+                           requests=all_reqs,
+                           jobs=jobs)
 
 
 @admin_bp.route("/requests/<int:req_id>/delete", methods=["POST"])
@@ -54,13 +56,13 @@ def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
     form = RequestForm(obj=req)
 
-    # On GET: clear WTForms' default entry then append one per existing item
+    # On GET: clear default and load existing items
     if flask_req.method == "GET":
         form.items.entries = []
         for item in req.items:
             form.items.append_entry({
                 "item_name": item.item_name,
-                "quantity":  item.quantity
+                "quantity":  item.quantity,
             })
 
     if form.validate_on_submit():
@@ -70,13 +72,13 @@ def edit_request(req_id):
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
 
-        # Rebuild item list
+        # Rebuild items wholesale
         req.items.clear()
         for entry in form.items.data:
             req.items.append(
                 RequestItem(
-                    item_name = entry["item_name"],
-                    quantity  = entry["quantity"]
+                    item_name=entry["item_name"],
+                    quantity=entry["quantity"]
                 )
             )
 
@@ -84,9 +86,10 @@ def edit_request(req_id):
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
-    # Needed for the “reassign” dropdown
+    # for the reassign dropdown
     jobs = Job.query.order_by(Job.start_date.desc()).all()
-    return render_template("admin/edit_request.html", form=form, req=req, jobs=jobs)
+    return render_template("admin/edit_request.html",
+                           form=form, req=req, jobs=jobs)
 
 
 @admin_bp.route("/requests/<int:req_id>")
@@ -109,6 +112,7 @@ def assign_request(req_id):
 def fulfill(req_id):
     req = Request.query.get_or_404(req_id)
     if flask_req.method == "POST":
+        # your fulfill logic here
         return redirect(url_for("admin.list_requests"))
     return render_template("admin/fulfill_request.html", request=req)
 
@@ -137,7 +141,8 @@ def export_csv():
             ])
     resp = make_response(output.getvalue())
     resp.headers["Content-Type"] = "text/csv"
-    resp.headers["Content-Disposition"] = "attachment; filename=requests_export.csv"
+    resp.headers["Content-Disposition"] = \
+        "attachment; filename=requests_export.csv"
     return resp
 
 
@@ -154,6 +159,7 @@ def update_status(req_id):
 
 # -- Jobs Routes -------------------------------------------------------------
 
+
 @admin_bp.route("/jobs")
 def jobs_list():
     pm_tabs = [
@@ -162,17 +168,23 @@ def jobs_list():
         "Nate's Projects", "Other"
     ]
     jobs_by_pm = {
-        "Home": Job.query.filter_by(archived=False)
-                         .order_by(Job.start_date.desc()).all()
+        "Home": (
+            Job.query
+            .filter_by(archived=False)
+            .order_by(Job.start_date.desc())
+            .all()
+        )
     }
     for pm in pm_tabs[1:]:
         jobs_by_pm[pm] = (
             Job.query
-               .filter_by(manager=pm, archived=False)
-               .order_by(Job.start_date.desc())
-               .all()
+            .filter_by(manager=pm, archived=False)
+            .order_by(Job.start_date.desc())
+            .all()
         )
-    return render_template("admin/jobs_list.html", pm_tabs=pm_tabs, jobs_by_pm=jobs_by_pm)
+    return render_template("admin/jobs_list.html",
+                           pm_tabs=pm_tabs,
+                           jobs_by_pm=jobs_by_pm)
 
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
@@ -186,11 +198,11 @@ def new_job():
     form.manager.choices = pm_choices
     if form.validate_on_submit():
         job = Job(
-            name       = form.name.data,
-            number     = form.number.data,
-            start_date = form.start_date.data,
-            manager    = form.manager.data,
-            status     = "Not started"
+            name=form.name.data,
+            number=form.number.data,
+            start_date=form.start_date.data,
+            manager=form.manager.data,
+            status="Not started"
         )
         db.session.add(job)
         db.session.commit()
@@ -228,7 +240,7 @@ def assign_manager(job_id):
 
 @admin_bp.route("/jobs/<int:job_id>/archive", methods=["POST"])
 def archive_job(job_id):
-    job = Request.query.get_or_404(job_id)
+    job = Job.query.get_or_404(job_id)
     job.archived = True
     db.session.commit()
     flash("Job archived.", "warning")
@@ -250,30 +262,37 @@ def job_detail(job_id):
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
     completed_reqs = (
         Request.query
-               .filter_by(job_id=job_id, status="Complete")
-               .order_by(Request.submitted_at.desc())
-               .all()
+        .filter_by(job_id=job_id, status="Complete")
+        .order_by(Request.submitted_at.desc())
+        .all()
     )
     jobs = Job.query.order_by(Job.start_date.desc()).all()
-    return render_template(
-        "admin/job_detail.html",
-        job=job,
-        assigned_assets=assigned_assets,
-        completed_reqs=completed_reqs,
-        jobs=jobs
-    )
+    return render_template("admin/job_detail.html",
+                           job=job,
+                           assigned_assets=assigned_assets,
+                           completed_reqs=completed_reqs,
+                           jobs=jobs)
 
 
 # -- Assets Routes -----------------------------------------------------------
 
+
 @admin_bp.route("/assets")
 def assets_list():
-    jobs   = Job.query.filter_by(archived=False) \
-                      .order_by(Job.start_date.desc()).all()
-    assets = Asset.query.options(
-        joinedload(Asset.current_job)
-    ).all()
-    return render_template("admin/assets_list.html", jobs=jobs, assets=assets)
+    jobs = (
+        Job.query
+        .filter_by(archived=False)
+        .order_by(Job.start_date.desc())
+        .all()
+    )
+    assets = (
+        Asset.query
+        .options(joinedload(Asset.current_job))
+        .all()
+    )
+    return render_template("admin/assets_list.html",
+                           jobs=jobs,
+                           assets=assets)
 
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
@@ -288,7 +307,8 @@ def assets_new():
         )
         db.session.add(new_asset)
         db.session.commit()
-        flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.", "success")
+        flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.",
+              "success")
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=None)
 
@@ -329,6 +349,10 @@ def unassign_asset(asset_id):
 
 @admin_bp.route("/reports")
 def reports():
-    archived_jobs = Job.query.filter_by(archived=True) \
-                             .order_by(Job.start_date.desc()).all()
+    archived_jobs = (
+        Job.query
+        .filter_by(archived=True)
+        .order_by(Job.start_date.desc())
+        .all()
+    )
     return render_template("admin/reports.html", jobs=archived_jobs)
