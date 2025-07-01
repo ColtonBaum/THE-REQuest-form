@@ -5,65 +5,52 @@
 {% block admin_content %}
 <div class="container py-4">
   <h3>Edit Request #{{ req.id }}</h3>
+
   <form method="post">
     {{ form.hidden_tag() }}
 
-    <div class="mb-3">
-      <label for="employee_name" class="form-label">Employee Name</label>
-      <input type="text" id="employee_name" name="employee_name"
-             class="form-control" value="{{ req.employee_name }}" required>
-    </div>
-
-    <div class="mb-3">
-      <label for="job_name" class="form-label">Job Name</label>
-      <input type="text" id="job_name" name="job_name"
-             class="form-control" value="{{ req.job_name }}" required>
-    </div>
-
-    <div class="mb-3">
-      <label for="job_number" class="form-label">Job Number</label>
-      <input type="text" id="job_number" name="job_number"
-             class="form-control" value="{{ req.job_number }}" required>
-    </div>
-
-    <div class="mb-3">
-      <label for="job_id" class="form-label">Reassign to Job</label>
-      <select name="job_id" id="job_id" class="form-select">
-        <option value="">—</option>
-        {% for job in jobs %}
-          <option value="{{ job.id }}"
-            {% if job.id == req.job_id %}selected{% endif %}>
-            {{ job.name }} ({{ job.number }})
-          </option>
+    {# show any validation errors #}
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        {% for field, errs in form.errors.items() %}
+          {% for err in errs %}
+            <li>{{ err }}</li>
+          {% endfor %}
         {% endfor %}
-      </select>
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+      {{ form.employee_name.label(class="form-label") }}
+      {{ form.employee_name(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.job_name.label(class="form-label") }}
+      {{ form.job_name(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.job_number.label(class="form-label") }}
+      {{ form.job_number(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+      {{ form.need_by_date.label(class="form-label") }}
+      {{ form.need_by_date(class="form-control") }}
     </div>
 
     <div class="mb-3" id="items-container">
       <label class="form-label">Items</label>
-      {% for i in req.items %}
+      {% for subform in form.items %}
       <div class="d-flex mb-2 item-row">
-        <input type="text" name="item_name_{{ i.id }}"
-               class="form-control me-2"
-               value="{{ i.item_name }}"
-               placeholder="Item name" required>
-        <input type="number" name="item_qty_{{ i.id }}"
-               class="form-control me-2"
-               value="{{ i.quantity }}"
-               placeholder="Qty" min="0" required>
+        {{ subform.item_name(class="form-control me-2", placeholder="Item name") }}
+        {{ subform.quantity(class="form-control me-2", placeholder="Qty") }}
         <button type="button" class="btn btn-outline-danger remove-item">&times;</button>
       </div>
       {% endfor %}
-      <!-- Hidden template for new items -->
-      <div id="item-template" class="d-flex mb-2 item-row" style="display: none;">
-        <input type="text" name="item_name__"
-               class="form-control me-2"
-               placeholder="Item name" required>
-        <input type="number" name="item_qty__"
-               class="form-control me-2"
-               placeholder="Qty" min="0" required>
-        <button type="button" class="btn btn-outline-danger remove-item">&times;</button>
-      </div>
     </div>
 
     <button type="button" id="add-item-btn" class="btn btn-outline-primary mb-3">
@@ -72,7 +59,8 @@
 
     <div class="mt-4">
       <button type="submit" class="btn btn-primary">Save Changes</button>
-      <a href="{{ url_for('admin.list_requests') }}" class="btn btn-secondary">Cancel</a>
+      <a href="{{ url_for('admin.list_requests') }}"
+         class="btn btn-secondary ms-2">Cancel</a>
     </div>
   </form>
 </div>
@@ -80,25 +68,25 @@
 
 {% block scripts %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('items-container');
-    const template  = document.getElementById('item-template');
-    let newIndex = 0;
+    const btn = document.getElementById('add-item-btn');
 
-    document.getElementById('add-item-btn').addEventListener('click', function() {
-      newIndex++;
-      const clone = template.cloneNode(true);
-      clone.style.display = 'flex';
-      clone.id = '';
-      const [nameInput, qtyInput] = clone.querySelectorAll('input');
-      nameInput.name = `new_item_name`;
-      qtyInput.name  = `new_item_qty`;
+    btn.addEventListener('click', () => {
+      // clone the last item-row, clear its inputs, append
+      const last = container.querySelector('.item-row:last-child');
+      const clone = last.cloneNode(true);
+      clone.querySelector('input[name$="item_name"]').value = '';
+      clone.querySelector('input[name$="quantity"]').value = '';
       container.appendChild(clone);
     });
 
-    container.addEventListener('click', function(e) {
+    container.addEventListener('click', e => {
       if (e.target.classList.contains('remove-item')) {
-        e.target.closest('.item-row').remove();
+        const row = e.target.closest('.item-row');
+        if (container.querySelectorAll('.item-row').length > 1) {
+          row.remove();
+        }
       }
     });
   });
