@@ -6,7 +6,7 @@
 <div class="container py-4">
   <h3>Edit Request #{{ req.id }}</h3>
 
-  <form method="post">
+  <form method="post" action="{{ url_for('admin.edit_request', req_id=req.id) }}">
     {{ form.hidden_tag() }}
 
     {# Show validation errors #}
