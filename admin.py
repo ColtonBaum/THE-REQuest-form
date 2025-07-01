@@ -7,7 +7,7 @@ from flask import (
 )
 from sqlalchemy import and_, not_
 from sqlalchemy.orm import joinedload
-
+from datetime import datetime
 from models import db, Request, Job, Asset, RequestItem
 from forms import JobForm, AssetForm, RequestForm
 
@@ -54,6 +54,15 @@ def delete_request(req_id):
 @admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
+
+    # Quick fix for Option 1: if need_by_date is stored as a string,
+    # convert it to a datetime.date so WTForms can render it properly.
+    if isinstance(req.need_by_date, str) and req.need_by_date:
+        try:
+            req.need_by_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+
     form = RequestForm(obj=req)
 
     # On GET: clear default and load existing items
