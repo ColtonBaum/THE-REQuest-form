@@ -1,7 +1,14 @@
 from flask_wtf import FlaskForm
 from wtforms import (
-    StringField, SelectField, DateField, DecimalField, SubmitField,
-    IntegerField, FieldList, FormField
+    Form,             # for nested form without CSRF
+    StringField,
+    SelectField,
+    DateField,
+    DecimalField,
+    SubmitField,
+    IntegerField,
+    FieldList,
+    FormField
 )
 from wtforms.validators import DataRequired, NumberRange, Length, Optional
 
@@ -19,7 +26,8 @@ PM_TABS = [
     ("Project Manager 10", "Project Manager 10"),
 ]
 
-class RequestItemForm(FlaskForm):
+class RequestItemForm(Form):
+    """Nested item form: use Form (no CSRF) so only the parent form handles CSRF."""
     item_name = StringField(
         'Item Name',
         validators=[DataRequired(), Length(max=200)]

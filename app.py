@@ -1,7 +1,6 @@
 import os
 from flask import Flask
 from flask_wtf import CSRFProtect
-from flask_wtf.csrf import generate_csrf
 from flask_migrate import Migrate
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
@@ -34,8 +33,7 @@ app.config.update({
     "SECRET_KEY": os.environ.get("SECRET_KEY", "your-secret-key"),
     "SQLALCHEMY_DATABASE_URI": db_uri,
     "SQLALCHEMY_TRACK_MODIFICATIONS": False,
-    "WTF_CSRF_ENABLED": True,
-    "WTF_CSRF_TIME_LIMIT": None,
+    # WTForms CSRF is on by default; no need for explicit flags here
 })
 
 # Initialize extensions
@@ -44,14 +42,12 @@ migrate = Migrate(app, db)
 
 # CSRF protection
 csrf = CSRFProtect(app)
-app.jinja_env.globals['csrf_token'] = generate_csrf
 
 # Socket.IO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Import admin *after* CSRF is set up, then exempt the edit view
-from admin import admin_bp, edit_request
-csrf.exempt(edit_request)
+# Import admin *after* CSRF is set up
+from admin import admin_bp  
 
 # Register blueprints
 app.register_blueprint(public_bp)
