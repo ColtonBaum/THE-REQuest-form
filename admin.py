@@ -8,7 +8,7 @@ from sqlalchemy import and_, not_
 from sqlalchemy.orm import joinedload
 
 from models import db, Request, Job, Asset, RequestItem
-from forms import JobForm, AssetForm
+from forms import JobForm, AssetForm, RequestForm  # ← import RequestForm
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -48,32 +48,39 @@ def delete_request(req_id):
 @admin_bp.route("/requests/<int:req_id>/edit", methods=["GET", "POST"])
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
-    if flask_req.method == "POST":
-        req.employee_name = flask_req.form["employee_name"]
-        req.job_name      = flask_req.form["job_name"]
-        req.job_number    = flask_req.form["job_number"]
-        req.need_by_date  = flask_req.form["need_by_date"]
-        # update/remove items
-        for item in list(req.items):
-            name = flask_req.form.get(f"item_name_{item.id}")
-            qty  = flask_req.form.get(f"item_qty_{item.id}")
-            if not name:
-                req.items.remove(item)
-                db.session.delete(item)
-            else:
-                item.item_name = name
-                if qty and qty.isdigit():
-                    item.quantity = int(qty)
-        # add new items
-        new_names = flask_req.form.getlist("new_item_name")
-        new_qtys  = flask_req.form.getlist("new_item_qty")
-        for name, qty in zip(new_names, new_qtys):
-            if name and qty.isdigit():
-                req.items.append(RequestItem(item_name=name, quantity=int(qty)))
+    form = RequestForm(obj=req)
+
+    # On GET, replace default single entry with one per existing item
+    if flask_req.method == "GET":
+        form.items.entries = []
+        for item in req.items:
+            form.items.append_entry({
+                'item_name': item.item_name,
+                'quantity': item.quantity
+            })
+
+    if form.validate_on_submit():
+        # update core fields
+        req.employee_name = form.employee_name.data
+        req.job_name      = form.job_name.data
+        req.job_number    = form.job_number.data
+        req.need_by_date  = form.need_by_date.data
+
+        # wipe out old items and re-add from form
+        req.items.clear()
+        for item_data in form.items.data:
+            req.items.append(
+                RequestItem(
+                    item_name = item_data['item_name'],
+                    quantity  = item_data['quantity']
+                )
+            )
+
         db.session.commit()
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
-    return render_template("admin/edit_request.html", req=req)
+
+    return render_template("admin/edit_request.html", form=form, req=req)
 
 @admin_bp.route("/requests/<int:req_id>")
 def request_detail(req_id):
@@ -133,6 +140,7 @@ def update_status(req_id):
         flash(f"Request #{req_id} set to “{new}”.", "success")
     return redirect(url_for("admin.list_requests"))
 
+
 # -- Jobs Routes -------------------------------------------------------------
 
 @admin_bp.route("/jobs")
@@ -162,11 +170,11 @@ def new_job():
     form.manager.choices = pm_choices
     if form.validate_on_submit():
         job = Job(
-            name=form.name.data,
-            number=form.number.data,
-            start_date=form.start_date.data,
-            manager=form.manager.data,
-            status="Not started"
+            name       = form.name.data,
+            number     = form.number.data,
+            start_date = form.start_date.data,
+            manager    = form.manager.data,
+            status     = "Not started"
         )
         db.session.add(job)
         db.session.commit()
@@ -222,18 +230,21 @@ def job_detail(job_id):
     completed_reqs = Request.query.filter_by(
         job_id=job_id, status="Complete"
     ).order_by(Request.submitted_at.desc()).all()
-    jobs = Job.query.order_by(Job.start_date.desc()).all()  # for reassignment dropdown
-    return render_template("admin/job_detail.html",
-                           job=job,
-                           assigned_assets=assigned_assets,
-                           completed_reqs=completed_reqs,
-                           jobs=jobs)
+    jobs = Job.query.order_by(Job.start_date.desc()).all()
+    return render_template(
+        "admin/job_detail.html",
+        job=job,
+        assigned_assets=assigned_assets,
+        completed_reqs=completed_reqs,
+        jobs=jobs
+    )
 
 # -- Assets Routes -----------------------------------------------------------
 
 @admin_bp.route("/assets")
 def assets_list():
-    jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
+    jobs   = Job.query.filter_by(archived=False) \
+                      .order_by(Job.start_date.desc()).all()
     assets = Asset.query.options(
         joinedload(Asset.current_job)
     ).all()
@@ -244,7 +255,7 @@ def assets_new():
     form = AssetForm()
     if form.validate_on_submit():
         new_asset = Asset(
-            type          = form.group.data,       # ◀ populate `type` from dropdown
+            type          = form.group.data,
             group         = form.group.data,
             identifier    = form.identifier.data,
             serial_number = form.serial_number.data
@@ -258,9 +269,9 @@ def assets_new():
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
-    form = AssetForm(obj=asset)
+    form  = AssetForm(obj=asset)
     if form.validate_on_submit():
-        asset.type          = form.group.data    # ◀ keep `type` in sync
+        asset.type          = form.group.data
         asset.group         = form.group.data
         asset.identifier    = form.identifier.data
         asset.serial_number = form.serial_number.data
