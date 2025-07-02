@@ -22,13 +22,14 @@ def make_request():
             job_name=form.job_name.data,
             job_number=form.job_number.data,
             need_by_date=form.need_by_date.data,
-            notes=form.notes.data
+            notes=form.notes.data  # ← include notes here
         )
         for item in form.items:
             req.items.append(RequestItem(
                 item_name=item.item_name.data,
                 quantity=item.quantity.data
             ))
+
         db.session.add(req)
         db.session.commit()
 
@@ -45,7 +46,7 @@ def make_request():
             'job_name': form.job_name.data,
             'job_number': form.job_number.data,
             'need_by_date': form.need_by_date.data.strftime('%Y-%m-%d'),
-            'notes': form.notes.data,
+            'notes': form.notes.data,  # ← pass notes through
             'requested_items': [
                 {'item_name': i.item_name.data, 'quantity': i.quantity.data}
                 for i in form.items

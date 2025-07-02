@@ -14,25 +14,34 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <h5 class="mb-3">Request Details</h5>
-      <p><strong>Submitted By:</strong> {{ req.employee_name }} ({{ req.employee_id }})</p>
+      <p><strong>Submitted By:</strong> {{ req.employee_name }}</p>
       <p><strong>Job Name:</strong> {{ req.job.name if req.job_id else req.job_name or '—' }}</p>
       <p><strong>Job Number:</strong> {{ req.job.number if req.job_id else req.job_number or '—' }}</p>
       <p><strong>Need By Date:</strong> {{ req.need_by_date }}</p>
       <p><strong>Status:</strong> {{ req.status }}</p>
       <p><strong>Submitted At:</strong> {{ req.submitted_at.strftime('%Y-%m-%d %I:%M %p') }}</p>
-      
-      {% if req.notes %}
-        <p><strong>Notes:</strong> {{ req.notes }}</p>
-      {% endif %}
-      
+
+      <hr>
+
+      <p><strong>Notes:</strong>
+        {% if req.notes %}
+          {{ req.notes }}
+        {% else %}
+          — No additional notes
+        {% endif %}
+      </p>
+
       {% if req.photo %}
         <div class="my-3">
           <strong>Attached Photo:</strong><br>
-          <img src="{{ url_for('static', filename='uploads/' ~ req.photo) }}" alt="Uploaded Photo" class="img-fluid rounded" style="max-width: 300px;">
+          <img
+            src="{{ url_for('static', filename='uploads/' ~ req.photo) }}"
+            alt="Uploaded Photo"
+            class="img-fluid rounded"
+            style="max-width: 300px;"
+          >
         </div>
       {% endif %}
-
-      <hr>
 
       <h5 class="mt-4">Requested Items</h5>
       <table class="table table-bordered table-sm align-middle">
