@@ -55,21 +55,18 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # Ensure need_by_date is a date object (not a raw string)
+    # Ensure need_by_date is a real date, not a string
     if isinstance(req.need_by_date, str) and req.need_by_date:
-        parsed_date = None
         try:
-            # Try ISO parsing first
-            parsed_date = datetime.fromisoformat(req.need_by_date).date()
+            req.need_by_date = datetime.fromisoformat(req.need_by_date).date()
         except ValueError:
             try:
-                parsed_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
+                req.need_by_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
             except ValueError:
-                parsed_date = None
-        req.need_by_date = parsed_date
+                req.need_by_date = None
 
-    # Instantiate form differently for GET vs POST
     if flask_req.method == "GET":
+        # Pre-populate the form from the DB on GET
         form = RequestForm(obj=req)
         form.items.entries.clear()
         for item in req.items:
@@ -78,35 +75,32 @@ def edit_request(req_id):
                 "quantity": item.quantity,
             })
     else:
-        # Bind POSTed data and defaults from obj
-        form = RequestForm(flask_req.form, obj=req)
+        # **📌 Here’s the change**: bind only formdata on POST
+        form = RequestForm(flask_req.form)
 
     if form.validate_on_submit():
-        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
-        # Rebuild items list
+        # Clear & rebuild all items
         req.items.clear()
         for entry in form.items.data:
-            req.items.append(
-                RequestItem(
-                    item_name=entry["item_name"],
-                    quantity=entry["quantity"]
-                )
-            )
+            req.items.append(RequestItem(
+                item_name=entry["item_name"],
+                quantity=entry["quantity"]
+            ))
 
         db.session.commit()
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
-    # For dropdowns on GET or re-render
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template("admin/edit_request.html",
                            form=form, req=req, jobs=jobs)
+
 
 
 @admin_bp.route("/requests/<int:req_id>")
