@@ -55,33 +55,26 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # Quick fix: parse need_by_date if stored as string
-    if isinstance(req.need_by_date, str) and req.need_by_date:
-        try:
-            req.need_by_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
-        except ValueError:
-            pass
-
-    form = RequestForm(obj=req)
-
-    # On GET: load existing items
+    # on GET we only want the obj=req
     if flask_req.method == "GET":
+        form = RequestForm(obj=req)
         form.items.entries = []
         for item in req.items:
             form.items.append_entry({
                 "item_name": item.item_name,
                 "quantity":  item.quantity,
             })
+    else:
+        # on POST, bind the POSTed values _and_ the obj for defaults
+        form = RequestForm(flask_req.form, obj=req)
 
     if form.validate_on_submit():
-        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
-        # Rebuild items wholesale
         req.items.clear()
         for entry in form.items.data:
             req.items.append(
@@ -92,25 +85,13 @@ def edit_request(req_id):
             )
 
         db.session.commit()
-
-        # Log saved values
-        current_app.logger.info(
-            f"💾 Saved Request #{req.id}: "
-            f"employee_name={req.employee_name!r}, "
-            f"job_name={req.job_name!r}, "
-            f"job_number={req.job_number!r}, "
-            f"need_by_date={req.need_by_date!r}, "
-            f"notes={req.notes!r}, "
-            f"items={[ (i.item_name, i.quantity) for i in req.items ]!r}"
-        )
-
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
-    # for the reassign dropdown
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template("admin/edit_request.html",
                            form=form, req=req, jobs=jobs)
+
 
 
 @admin_bp.route("/requests/<int:req_id>")
