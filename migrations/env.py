@@ -2,15 +2,15 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Alembic Config object, read values from alembic.ini
+# this is the Alembic Config object, which reads values from alembic.ini
 config = context.config
 
-# set up Python logging from the config file
+# set up Python logging according to the config file
 fileConfig(config.config_file_name)
 
-# If you have MetaData from your models, import it here:
-# from yourapp.models import Base
-# target_metadata = Base.metadata
+# if you have metadata from your SQLAlchemy models, import it here:
+# from public import db
+# target_metadata = db.metadata
 target_metadata = None
 
 def run_migrations_offline():
