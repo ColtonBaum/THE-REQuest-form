@@ -55,26 +55,41 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # on GET we only want the obj=req
+    # Ensure need_by_date is a date object (not a raw string)
+    if isinstance(req.need_by_date, str) and req.need_by_date:
+        parsed_date = None
+        try:
+            # Try ISO parsing first
+            parsed_date = datetime.fromisoformat(req.need_by_date).date()
+        except ValueError:
+            try:
+                parsed_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
+            except ValueError:
+                parsed_date = None
+        req.need_by_date = parsed_date
+
+    # Instantiate form differently for GET vs POST
     if flask_req.method == "GET":
         form = RequestForm(obj=req)
-        form.items.entries = []
+        form.items.entries.clear()
         for item in req.items:
             form.items.append_entry({
                 "item_name": item.item_name,
-                "quantity":  item.quantity,
+                "quantity": item.quantity,
             })
     else:
-        # on POST, bind the POSTed values _and_ the obj for defaults
+        # Bind POSTed data and defaults from obj
         form = RequestForm(flask_req.form, obj=req)
 
     if form.validate_on_submit():
+        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
+        # Rebuild items list
         req.items.clear()
         for entry in form.items.data:
             req.items.append(
@@ -88,10 +103,10 @@ def edit_request(req_id):
         flash("Request updated successfully.", "success")
         return redirect(url_for("admin.list_requests"))
 
+    # For dropdowns on GET or re-render
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template("admin/edit_request.html",
                            form=form, req=req, jobs=jobs)
-
 
 
 @admin_bp.route("/requests/<int:req_id>")
@@ -159,9 +174,7 @@ def update_status(req_id):
         flash(f"Request #{req_id} set to “{new}”.", "success")
     return redirect(url_for("admin.list_requests"))
 
-
 # -- Jobs Routes -------------------------------------------------------------
-
 
 @admin_bp.route("/jobs")
 def jobs_list():
@@ -189,7 +202,6 @@ def jobs_list():
                            pm_tabs=pm_tabs,
                            jobs_by_pm=jobs_by_pm)
 
-
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
 def new_job():
     pm_choices = [(pm, pm) for pm in [
@@ -213,7 +225,6 @@ def new_job():
         return redirect(url_for("admin.jobs_list"))
     return render_template("admin/job_form.html", form=form, job=None)
 
-
 @admin_bp.route("/jobs/<int:job_id>/edit", methods=["GET", "POST"])
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
@@ -231,7 +242,6 @@ def edit_job(job_id):
         return redirect(url_for("admin.jobs_list"))
     return render_template("admin/job_form.html", form=form, job=job)
 
-
 @admin_bp.route("/jobs/<int:job_id>/assign_manager", methods=["POST"])
 def assign_manager(job_id):
     job = Job.query.get_or_404(job_id)
@@ -239,7 +249,6 @@ def assign_manager(job_id):
     db.session.commit()
     flash(f"Job #{job_id} re-assigned to {job.manager}.", "success")
     return redirect(url_for("admin.jobs_list"))
-
 
 @admin_bp.route("/jobs/<int:job_id>/archive", methods=["POST"])
 def archive_job(job_id):
@@ -249,7 +258,6 @@ def archive_job(job_id):
     flash("Job archived.", "warning")
     return redirect(url_for("admin.jobs_list"))
 
-
 @admin_bp.route("/jobs/<int:job_id>/delete", methods=["POST"])
 def delete_job(job_id):
     job = Job.query.get_or_404(job_id)
@@ -257,7 +265,6 @@ def delete_job(job_id):
     db.session.commit()
     flash(f"Job '{job.name}' deleted.", "danger")
     return redirect(url_for("admin.jobs_list"))
-
 
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
@@ -276,9 +283,7 @@ def job_detail(job_id):
                            completed_reqs=completed_reqs,
                            jobs=jobs)
 
-
 # -- Assets Routes -----------------------------------------------------------
-
 
 @admin_bp.route("/assets")
 def assets_list():
@@ -297,7 +302,6 @@ def assets_list():
                            jobs=jobs,
                            assets=assets)
 
-
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
     form = AssetForm()
@@ -315,7 +319,6 @@ def assets_new():
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=None)
 
-
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
@@ -330,7 +333,6 @@ def edit_asset(asset_id):
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=asset)
 
-
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
@@ -339,14 +341,12 @@ def assign_asset(asset_id):
     db.session.commit()
     return redirect(flask_req.referrer)
 
-
 @admin_bp.route("/assets/<int:asset_id>/unassign", methods=["POST"])
 def unassign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     asset.current_job_id = None
     db.session.commit()
     return redirect(flask_req.referrer)
-
 
 # -- Reports Routes ---------------------------------------------------------
 
