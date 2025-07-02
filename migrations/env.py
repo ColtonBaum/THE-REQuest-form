@@ -4,19 +4,21 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# this is the Alembic Config object, based on alembic.ini
+# Alembic config, from the ini file at your project root
 config = context.config
 
-# set up Python logging per the ini file
+# Set up Python logging
 fileConfig(config.config_file_name)
 
-# if you have MetaData for autogenerate, import it here:
-# from yourapp import db
-# target_metadata = db.metadata
+# If your models expose MetaData for "autogenerate", import it here:
+# from yourapp.models import Base
+# target_metadata = Base.metadata
 target_metadata = None
+
 
 def get_url():
     return os.environ["DATABASE_URL"]
+
 
 def run_migrations_offline():
     url = get_url()
@@ -29,21 +31,21 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
-    # override the ini file’s URL entirely with the one from env
-    configuration = config.get_section(config.config_ini_section).copy()
-    configuration["sqlalchemy.url"] = get_url()
+    cfg = config.get_section(config.config_ini_section).copy()
+    cfg["sqlalchemy.url"] = get_url()
 
     connectable = engine_from_config(
-        configuration,
+        cfg,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-
-    with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+    with connectable.connect() as conn:
+        context.configure(connection=conn, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
