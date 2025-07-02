@@ -55,43 +55,50 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # Ensure need_by_date is a real date, not a string
+    # Ensure need_by_date is a date object (not a raw string)
     if isinstance(req.need_by_date, str) and req.need_by_date:
+        parsed_date = None
         try:
-            req.need_by_date = datetime.fromisoformat(req.need_by_date).date()
+            # Try ISO parsing (handles "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS")
+            parsed_date = datetime.fromisoformat(req.need_by_date).date()
         except ValueError:
+            # Fallback to strict YYYY-MM-DD
             try:
-                req.need_by_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
+                parsed_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
             except ValueError:
-                req.need_by_date = None
+                parsed_date = None
+        req.need_by_date = parsed_date
 
     if flask_req.method == "GET":
-        # Pre-populate the form from the DB on GET
+        # Pre-populate form from the DB on GET
         form = RequestForm(obj=req)
-        form.items.entries.clear()
+        form.items.entries = []
         for item in req.items:
             form.items.append_entry({
                 "item_name": item.item_name,
-                "quantity": item.quantity,
+                "quantity":  item.quantity,
             })
     else:
-        # **📌 Here’s the change**: bind only formdata on POST
+        # On POST, bind only submitted form data (so new items are parsed)
         form = RequestForm(flask_req.form)
 
     if form.validate_on_submit():
+        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
-        # Clear & rebuild all items
+        # Rebuild items list
         req.items.clear()
         for entry in form.items.data:
-            req.items.append(RequestItem(
-                item_name=entry["item_name"],
-                quantity=entry["quantity"]
-            ))
+            req.items.append(
+                RequestItem(
+                    item_name=entry["item_name"],
+                    quantity=entry["quantity"]
+                )
+            )
 
         db.session.commit()
         flash("Request updated successfully.", "success")
@@ -100,7 +107,6 @@ def edit_request(req_id):
     jobs = Job.query.order_by(Job.start_date.desc()).all()
     return render_template("admin/edit_request.html",
                            form=form, req=req, jobs=jobs)
-
 
 
 @admin_bp.route("/requests/<int:req_id>")
@@ -223,7 +229,7 @@ def new_job():
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
     pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
+        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeill",
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]]
@@ -311,7 +317,7 @@ def assets_new():
         flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.",
               "success")
         return redirect(url_for("admin.assets_list"))
-    return render_template("admin/asset_form.html", form=form, asset=None)
+    return render_template("admin.asset_form.html", form=form, asset=None)
 
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
@@ -325,7 +331,7 @@ def edit_asset(asset_id):
         db.session.commit()
         flash("Asset updated.", "success")
         return redirect(url_for("admin.assets_list"))
-    return render_template("admin/asset_form.html", form=form, asset=asset)
+    return render_template("admin.asset_form.html", form=form, asset=asset)
 
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
