@@ -80,7 +80,12 @@ def edit_request(req_id):
             })
     else:
         # On POST, bind only submitted form data (so new items are parsed)
+        # 🔍 DEBUG: log raw form keys to inspect dynamic entries
+        current_app.logger.debug(f"📋 Raw form keys: {list(flask_req.form.keys())}")
+        # On POST, bind only submitted form data (so new items are parsed)
         form = RequestForm(flask_req.form)
+        # 🔍 DEBUG: inspect parsed items
+        current_app.logger.debug(f"🧩 Parsed items count={len(form.items.data)}, data={form.items.data}")
 
     if form.validate_on_submit():
         # Update core fields
