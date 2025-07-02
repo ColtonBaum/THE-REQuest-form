@@ -2,16 +2,17 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# this is the Alembic Config object, which reads values from alembic.ini
+# this one points at the [alembic] section of alembic.ini
 config = context.config
 
-# set up Python logging according to the config file
+# set up Python logging via the config file
 fileConfig(config.config_file_name)
 
-# if you have metadata from your SQLAlchemy models, import it here:
+# if you have Model.metadata to target, import it here:
 # from public import db
 # target_metadata = db.metadata
 target_metadata = None
+
 
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
@@ -19,10 +20,11 @@ def run_migrations_offline():
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
-        dialect_opts={"paramstyle":"named"},
+        dialect_opts={"paramstyle": "named"},
     )
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online():
     connectable = engine_from_config(
@@ -37,6 +39,7 @@ def run_migrations_online():
         )
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
