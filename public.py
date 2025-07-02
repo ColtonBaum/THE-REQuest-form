@@ -16,12 +16,13 @@ def make_request():
     print(f"▶️ FORM DATA: {request.form}")
 
     if form.validate_on_submit():
-        # Save request to the database
+        # Save request to the database, including notes
         req = Request(
             employee_name=form.employee_name.data,
             job_name=form.job_name.data,
             job_number=form.job_number.data,
-            need_by_date=form.need_by_date.data
+            need_by_date=form.need_by_date.data,
+            notes=form.notes.data
         )
         for item in form.items:
             req.items.append(RequestItem(
@@ -38,13 +39,17 @@ def make_request():
             "job_number": req.job_number
         })
 
-        # Prepare submitted data for confirmation page
+        # Prepare submitted data for confirmation page, including notes
         submitted_data = {
             'employee_name': form.employee_name.data,
             'job_name': form.job_name.data,
             'job_number': form.job_number.data,
             'need_by_date': form.need_by_date.data.strftime('%Y-%m-%d'),
-            'requested_items': [{'item_name': i.item_name.data, 'quantity': i.quantity.data} for i in form.items]
+            'notes': form.notes.data,
+            'requested_items': [
+                {'item_name': i.item_name.data, 'quantity': i.quantity.data}
+                for i in form.items
+            ]
         }
 
         return render_template("public/submitted.html", data=submitted_data)
