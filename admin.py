@@ -322,7 +322,7 @@ def assets_new():
         flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.",
               "success")
         return redirect(url_for("admin.assets_list"))
-    return render_template("admin.asset_form.html", form=form, asset=None)
+    return render_template("admin/asset_form.html", form=form, asset=None)
 
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
@@ -336,7 +336,7 @@ def edit_asset(asset_id):
         db.session.commit()
         flash("Asset updated.", "success")
         return redirect(url_for("admin.assets_list"))
-    return render_template("admin.asset_form.html", form=form, asset=asset)
+    return render_template("admin/asset_form.html", form=form, asset=asset)
 
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
