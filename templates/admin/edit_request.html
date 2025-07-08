@@ -73,35 +73,42 @@
 
 {% block scripts %}
 <script>
+  /**
+   * Walk through all item rows and reassign name attributes to a sequential index
+   */
+  function reindexItems() {
+    const container = document.getElementById('items-container');
+    const rows = container.querySelectorAll('.item-row');
+    rows.forEach((row, i) => {
+      const nameInput = row.querySelector('input[name$="item_name"]');
+      const qtyInput  = row.querySelector('input[name$="quantity"]');
+      nameInput.name = `items-${i}-item_name`;
+      qtyInput.name  = `items-${i}-quantity`;
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('items-container');
     const addBtn    = document.getElementById('add-item-btn');
 
+    // Add new item row
     addBtn.addEventListener('click', () => {
       const rows = container.querySelectorAll('.item-row');
       const last = rows[rows.length - 1];
       const clone = last.cloneNode(true);
-
-      const newIndex = rows.length;
-      const nameInput = clone.querySelector('input[name$="item_name"]');
-      const qtyInput  = clone.querySelector('input[name$="quantity"]');
-
-      // re-index names: items-<n>-item_name, items-<n>-quantity
-      nameInput.name = `items-${newIndex}-item_name`;
-      qtyInput.name  = `items-${newIndex}-quantity`;
-
-      // clear values
-      nameInput.value = '';
-      qtyInput.value  = '';
-
+      clone.querySelector('input[name$="item_name"]').value = '';
+      clone.querySelector('input[name$="quantity"]').value  = '';
       container.appendChild(clone);
+      reindexItems();
     });
 
+    // Remove an item row
     container.addEventListener('click', e => {
       if (e.target.classList.contains('remove-item')) {
         const rows = container.querySelectorAll('.item-row');
         if (rows.length > 1) {
           e.target.closest('.item-row').remove();
+          reindexItems();
         }
       }
     });
