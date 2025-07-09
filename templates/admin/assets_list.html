@@ -30,13 +30,20 @@
           <td>{{ asset.group or '—' }}</td>
           <td>{{ asset.identifier }}</td>
           <td>{{ asset.serial_number }}</td>
-          <td>{{ asset.current_job.name if asset.current_job else '—' }}</td>
           <td>
-            <a href="{{ url_for('admin.edit_asset', asset_id=asset.id) }}"
-               class="btn btn-sm btn-outline-secondary">Edit</a>
-            <form method="post"
-                  action="{{ url_for('admin.unassign_asset', asset_id=asset.id) }}"
-                  style="display:inline;">
+            <form method="post" action="{{ url_for('admin.assign_asset', asset_id=asset.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="job_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">— Unassigned —</option>
+                {% for job in jobs %}
+                <option value="{{ job.id }}" {% if asset.current_job_id == job.id %}selected{% endif %}>{{ job.name }} ({{ job.number }})</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            <a href="{{ url_for('admin.edit_asset', asset_id=asset.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="post" action="{{ url_for('admin.unassign_asset', asset_id=asset.id) }}" style="display:inline;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger">Unassign</button>
             </form>
@@ -50,8 +57,7 @@
 
   <h3>Other Assets</h3>
   <div class="table-responsive">
-    <table id="assets-table"
-           class="table table-striped table-bordered align-middle">
+    <table id="assets-table" class="table table-striped table-bordered align-middle">
       <thead class="table-dark">
         <tr>
           <th>ID</th>
@@ -70,28 +76,19 @@
           <td>{{ asset.identifier }}</td>
           <td>{{ asset.serial_number }}</td>
           <td>
-            <form method="post"
-                  action="{{ url_for('admin.assign_asset', asset_id=asset.id) }}">
+            <form method="post" action="{{ url_for('admin.assign_asset', asset_id=asset.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <select name="job_id"
-                      class="form-select form-select-sm"
-                      onchange="this.form.submit()">
+              <select name="job_id" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">— Unassigned —</option>
                 {% for job in jobs %}
-                <option value="{{ job.id }}"
-                  {% if asset.current_job_id == job.id %}selected{% endif %}>
-                  {{ job.name }} ({{ job.number }})
-                </option>
+                <option value="{{ job.id }}" {% if asset.current_job_id == job.id %}selected{% endif %}>{{ job.name }} ({{ job.number }})</option>
                 {% endfor %}
               </select>
             </form>
           </td>
           <td>
-            <a href="{{ url_for('admin.edit_asset', asset_id=asset.id) }}"
-               class="btn btn-sm btn-outline-secondary">Edit</a>
-            <form method="post"
-                  action="{{ url_for('admin.unassign_asset', asset_id=asset.id) }}"
-                  style="display:inline;">
+            <a href="{{ url_for('admin.edit_asset', asset_id=asset.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="post" action="{{ url_for('admin.unassign_asset', asset_id=asset.id) }}" style="display:inline;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-danger">Unassign</button>
             </form>
