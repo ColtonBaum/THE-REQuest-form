@@ -9,9 +9,10 @@
     <a href="{{ url_for('admin.assets_new') }}" class="btn btn-primary">+ New Asset</a>
   </div>
 
-  <div class="table-responsive">
-    <table id="assets-table"
-           class="table table-striped table-bordered table-hover align-middle">
+  {% if on_deck %}
+  <h3>On Deck (Shop)</h3>
+  <div class="table-responsive mb-5">
+    <table class="table table-striped table-bordered align-middle">
       <thead class="table-dark">
         <tr>
           <th>ID</th>
@@ -23,7 +24,46 @@
         </tr>
       </thead>
       <tbody>
-        {% for asset in assets %}
+        {% for asset in on_deck %}
+        <tr>
+          <td>{{ asset.id }}</td>
+          <td>{{ asset.group or '—' }}</td>
+          <td>{{ asset.identifier }}</td>
+          <td>{{ asset.serial_number }}</td>
+          <td>{{ asset.current_job.name if asset.current_job else '—' }}</td>
+          <td>
+            <a href="{{ url_for('admin.edit_asset', asset_id=asset.id) }}"
+               class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="post"
+                  action="{{ url_for('admin.unassign_asset', asset_id=asset.id) }}"
+                  style="display:inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger">Unassign</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <h3>Other Assets</h3>
+  <div class="table-responsive">
+    <table id="assets-table"
+           class="table table-striped table-bordered align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Group</th>
+          <th>Identifier</th>
+          <th>Serial #</th>
+          <th>Current Job</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in others %}
         <tr>
           <td>{{ asset.id }}</td>
           <td>{{ asset.group or '—' }}</td>
@@ -39,7 +79,7 @@
                 <option value="">— Unassigned —</option>
                 {% for job in jobs %}
                 <option value="{{ job.id }}"
-                        {% if asset.current_job_id == job.id %}selected{% endif %}>
+                  {% if asset.current_job_id == job.id %}selected{% endif %}>
                   {{ job.name }} ({{ job.number }})
                 </option>
                 {% endfor %}
@@ -62,9 +102,4 @@
     </table>
   </div>
 </div>
-
-<script>
-// simple client-side filter of the table
-// (attach to whichever search input you prefer; the large bar has been removed)
-</script>
 {% endblock %}

@@ -292,20 +292,39 @@ def job_detail(job_id):
 
 @admin_bp.route("/assets")
 def assets_list():
+    # load all jobs for the assign dropdown
     jobs = (
         Job.query
-        .filter_by(archived=False)
-        .order_by(Job.start_date.desc())
-        .all()
+           .filter_by(archived=False)
+           .order_by(Job.start_date.desc())
+           .all()
     )
+
+    # load every asset (with its current_job eager-loaded)
     assets = (
         Asset.query
-        .options(joinedload(Asset.current_job))
-        .all()
+             .options(joinedload(Asset.current_job))
+             .all()
     )
-    return render_template("admin/assets_list.html",
-                           jobs=jobs,
-                           assets=assets)
+
+    # find the “Shop” job (if it exists)
+    shop_job = next((j for j in jobs if j.name.lower() == "shop"), None)
+
+    # split assets
+    if shop_job:
+        on_deck   = [a for a in assets if a.current_job_id == shop_job.id]
+        others    = [a for a in assets if a.current_job_id != shop_job.id]
+    else:
+        on_deck = []
+        others  = assets
+
+    return render_template(
+      "admin/assets_list.html",
+      on_deck=on_deck,
+      others=others,
+      jobs=jobs
+    )
+
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
 def assets_new():
