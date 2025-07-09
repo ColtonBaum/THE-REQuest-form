@@ -61,6 +61,14 @@ class Asset(db.Model):
     serial_number   = db.Column(db.String(100), nullable=False)
     current_job_id  = db.Column(db.Integer, db.ForeignKey('job.id'), nullable=True)
 
+    # Self-referential parent-child relationship
+    parent_id       = db.Column(db.Integer, db.ForeignKey('asset.id'), nullable=True)
+    children        = db.relationship(
+        'Asset',
+        backref=db.backref('parent', remote_side=[id]),
+        cascade='all, delete-orphan'
+    )
+
     # Current assignment lookup
     current_job     = db.relationship('Job', back_populates='assets')
 

@@ -361,7 +361,14 @@ def edit_asset(asset_id):
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     job_id = flask_req.form.get("job_id") or None
+
+    # assign the trailer (or standalone asset)
     asset.current_job_id = job_id
+
+    # if this is a “parent” (e.g. a trailer), cascade to its child LN assets
+    for child in asset.children:
+        child.current_job_id = job_id
+
     db.session.commit()
     return redirect(flask_req.referrer)
 
