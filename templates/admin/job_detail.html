@@ -102,6 +102,7 @@
             <th>Job Number</th>
             <th>Submitted</th>
             <th>Items</th>
+            <th>Notes</th>
             <th>Status / Reassign</th>
           </tr>
         </thead>
@@ -128,6 +129,7 @@
                 {% endfor %}
               </ul>
             </td>
+            <td>{{ r.notes or '—' }}</td>
             <td>
               <div>{{ r.status }}</div>
               <form method="POST"
@@ -148,7 +150,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="7" class="text-center">No completed requests.</td>
+            <td colspan="8" class="text-center">No completed requests.</td>
           </tr>
           {% endfor %}
         </tbody>
