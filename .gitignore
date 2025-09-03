@@ -1,3 +1,36 @@
-.env
+# Python cache
 __pycache__/
-instance/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# SQLite database
+app.db
+*.sqlite3
+
+# Alembic migration cache
+migrations/versions/__pycache__/
+
+# Ignore old backup of migrations if you don’t want it in git
+migrations/versions_backup/
+
+# IDE/project files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Byte-compiled Jupyter checkpoints
+.ipynb_checkpoints/
