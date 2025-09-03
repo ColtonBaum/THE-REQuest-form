@@ -8,7 +8,7 @@
       <h4 class="card-title text-center mb-4">Tooling/Trailer Request</h4>
       <form method="post">
         {{ form.hidden_tag() }}
-        <!-- Your new inputs -->
+
         <div class="mb-3">
           {{ form.employee_name.label }}
           {{ form.employee_name(class="form-control") }}
@@ -29,21 +29,21 @@
         <h5 class="mt-4">Items</h5>
         <div id="items">
           {% for subform in form.items %}
-          <div class="row align-items-end mb-2">
+          <div class="row align-items-end mb-2 item-row">
             <div class="col">
               {{ subform.item_name.label }}
-              {{ subform.item_name(class="form-control") }}
+              {{ subform.item_name(class="form-control", placeholder='e.g., 3/8" socket set') }}
             </div>
-            <div class="col-3">
+            <div class="col-4 col-md-3">
               {{ subform.quantity.label }}
-              {{ subform.quantity(class="form-control") }}
+              {{ subform.quantity(class="form-control", placeholder="e.g., 1 set / N/A") }}
             </div>
           </div>
           {% endfor %}
         </div>
+
         <button type="button" id="add-item" class="btn btn-sm btn-outline-secondary">+ Add another item</button>
 
-        <!-- Notes Section -->
         <div class="mb-3 mt-4">
           {{ form.notes.label(class="form-label") }}
           {{ form.notes(class="form-control") }}
@@ -58,16 +58,36 @@
 </div>
 
 <script>
-// Clone the first item row, reset its inputs, and append
-document.getElementById('add-item').onclick = () => {
+(function() {
   const itemsDiv = document.getElementById('items');
-  const idx = itemsDiv.children.length;
-  const newRow = itemsDiv.children[0].cloneNode(true);
-  newRow.querySelectorAll('input').forEach(i => {
-    i.name = i.name.replace(/\d+/, idx);
-    i.value = '';
+  const addBtn = document.getElementById('add-item');
+
+  function nextIndex() {
+    return itemsDiv.querySelectorAll('.item-row').length;
+  }
+
+  function reindexRow(row, newIdx) {
+    // Update inputs (name/id) and clear values
+    row.querySelectorAll('input').forEach((input) => {
+      if (input.name) input.name = input.name.replace(/items-\d+-/, `items-${newIdx}-`);
+      if (input.id)   input.id   = input.id.replace(/items-\d+-/, `items-${newIdx}-`);
+      input.value = '';
+    });
+    // Update labels' for attribute
+    row.querySelectorAll('label').forEach((label) => {
+      const f = label.getAttribute('for');
+      if (f) label.setAttribute('for', f.replace(/items-\d+-/, `items-${newIdx}-`));
+    });
+  }
+
+  addBtn.addEventListener('click', () => {
+    const rows = itemsDiv.querySelectorAll('.item-row');
+    if (rows.length === 0) return; // safety
+    const base = rows[0];
+    const clone = base.cloneNode(true);
+    reindexRow(clone, nextIndex());
+    itemsDiv.appendChild(clone);
   });
-  itemsDiv.appendChild(newRow);
-};
+})();
 </script>
 {% endblock %}

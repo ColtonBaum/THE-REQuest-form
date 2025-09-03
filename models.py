@@ -48,8 +48,10 @@ class RequestItem(db.Model):
     __tablename__ = 'request_item'
     id           = db.Column(db.Integer, primary_key=True)
     request_id   = db.Column(db.Integer, db.ForeignKey('request.id'), nullable=False)
-    item_name    = db.Column(db.String(200), nullable=False)
-    quantity     = db.Column(db.Integer,     nullable=False)
+    # Allow blank rows in the form: both fields optional
+    item_name    = db.Column(db.String(200), nullable=True)
+    # Quantity as free text (e.g., "2", "set", "box", "N/A")
+    quantity     = db.Column(db.String(64),  nullable=True)
     unit_price   = db.Column(db.Numeric(10,2), nullable=True)
 
 class Asset(db.Model):

@@ -31,11 +31,12 @@ class RequestItemForm(Form):
     """Nested item form: use Form (no CSRF) so only the parent form handles CSRF."""
     item_name = StringField(
         'Item Name',
-        validators=[DataRequired(), Length(max=200)]
+        validators=[Optional(), Length(max=200)]
     )
-    quantity = IntegerField(
+    # Quantity is free-text and optional
+    quantity = StringField(
         'Quantity',
-        validators=[DataRequired(), NumberRange(min=1)]
+        validators=[Optional(), Length(max=64)]
     )
 
 class RequestForm(FlaskForm):
@@ -58,7 +59,7 @@ class RequestForm(FlaskForm):
     )
     items = FieldList(
         FormField(RequestItemForm),
-        min_entries=1
+        min_entries=1  # can be increased (e.g., 5) if you want more blank rows by default
     )
     notes = TextAreaField(
         'Notes',

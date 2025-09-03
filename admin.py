@@ -80,11 +80,8 @@ def edit_request(req_id):
             })
     else:
         # On POST, bind only submitted form data (so new items are parsed)
-        # 🔍 DEBUG: log raw form keys to inspect dynamic entries
         current_app.logger.debug(f"📋 Raw form keys: {list(flask_req.form.keys())}")
-        # On POST, bind only submitted form data (so new items are parsed)
         form = RequestForm(flask_req.form)
-        # 🔍 DEBUG: inspect parsed items
         current_app.logger.debug(f"🧩 Parsed items count={len(form.items.data)}, data={form.items.data}")
 
     if form.validate_on_submit():
@@ -95,15 +92,14 @@ def edit_request(req_id):
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
-        # Rebuild items list
+        # Rebuild items list (skip blank rows)
         req.items.clear()
         for entry in form.items.data:
-            req.items.append(
-                RequestItem(
-                    item_name=entry["item_name"],
-                    quantity=entry["quantity"]
-                )
-            )
+            name = (entry.get("item_name") or "").strip()
+            qty  = (entry.get("quantity") or "").strip()
+            if not name and not qty:
+                continue
+            req.items.append(RequestItem(item_name=name or None, quantity=qty or None))
 
         db.session.commit()
         flash("Request updated successfully.", "success")
@@ -137,6 +133,43 @@ def fulfill(req_id):
         # your fulfill logic here
         return redirect(url_for("admin.list_requests"))
     return render_template("admin/fulfill_request.html", request=req)
+
+
+# New: Create Request (Admin) -----------------------------------------------
+
+@admin_bp.route("/requests/new", methods=["GET", "POST"])
+def new_request():
+    form = RequestForm()
+    if form.validate_on_submit():
+        req = Request(
+            employee_name=form.employee_name.data,
+            job_name=form.job_name.data,
+            job_number=form.job_number.data,
+            need_by_date=form.need_by_date.data,
+            notes=form.notes.data,
+            status="Not started",
+            submitted_at=datetime.utcnow(),
+        )
+        db.session.add(req)
+        db.session.flush()  # get req.id before adding items
+
+        # Add items, skipping blank rows
+        for entry in form.items.data:
+            name = (entry.get("item_name") or "").strip()
+            qty  = (entry.get("quantity") or "").strip()
+            if not name and not qty:
+                continue
+            db.session.add(RequestItem(
+                request_id=req.id,
+                item_name=name or None,
+                quantity=qty or None,
+            ))
+
+        db.session.commit()
+        flash("Request created.", "success")
+        return redirect(url_for("admin.list_requests"))
+
+    return render_template("request_form.html", form=form)
 
 
 @admin_bp.route("/requests/export")
@@ -234,7 +267,7 @@ def new_job():
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
     pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeill",
+        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",  # fixed here
         "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
         "Nate's Projects", "Other"
     ]]
