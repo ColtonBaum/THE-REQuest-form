@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from models import db, Request, RequestItem
 from forms import RequestForm
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime, date
 
 public_bp = Blueprint("public", __name__, url_prefix="")
 
@@ -21,6 +22,25 @@ def _clean_int(val):
     except ValueError:
         return None
 
+def _parse_need_by(val):
+    """
+    Normalize the need_by_date from the form to a `date` object.
+    Accepts date, datetime, or 'YYYY-MM-DD' string. Returns None if invalid/empty.
+    """
+    if isinstance(val, date) and not isinstance(val, datetime):
+        return val
+    if isinstance(val, datetime):
+        return val.date()
+    if isinstance(val, str):
+        s = val.strip()
+        if not s:
+            return None
+        try:
+            return datetime.strptime(s, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
+
 @public_bp.route("/", methods=["GET", "POST"])
 @public_bp.route("/submit", methods=["GET", "POST"])
 def make_request():
@@ -29,38 +49,37 @@ def make_request():
     print(f"▶️ FORM DATA: {request.form}")
 
     if form.validate_on_submit():
+        need_by = _parse_need_by(form.need_by_date.data)
+        if need_by is None:
+            flash("Please provide a valid Need By Date.", "warning")
+            return render_template("public/request_form.html", form=form)
+
         req = Request(
             employee_name=form.employee_name.data,
             job_name=form.job_name.data,
             job_number=form.job_number.data,
-            need_by_date=form.need_by_date.data,  # WTForms DateField -> date
+            need_by_date=need_by,  # ✅ date object for DB
             notes=form.notes.data,
         )
 
         saved_any = False
 
-        # Enumerate for better error messages (1-based row numbers)
         for idx, item in enumerate(form.items, start=1):
             name_raw = item.item_name.data or ""
             name = name_raw.strip()
             qty_raw = item.quantity.data
             qty = _clean_int(qty_raw)
 
-            # Skip truly blank rows (both empty)
+            # Skip truly blank rows
             if not name and qty is None:
                 continue
 
-            # If they typed a name but quantity didn't parse to digits, show an error
             if qty is None:
                 display_name = name if name else "item"
                 flash(f"Row {idx}: Quantity for '{display_name}' must be numbers only.", "warning")
                 return render_template("public/request_form.html", form=form)
 
-            # At this point qty is a valid int
-            req.items.append(RequestItem(
-                item_name=name or None,  # allow blank item names as NULL if you want
-                quantity=qty             # integer column in DB
-            ))
+            req.items.append(RequestItem(item_name=name or None, quantity=qty))
             saved_any = True
 
         if not saved_any:
@@ -83,12 +102,11 @@ def make_request():
             "job_number": req.job_number
         })
 
-        # Build confirmation payload from saved data
         submitted_data = {
             "employee_name": req.employee_name,
             "job_name": req.job_name,
             "job_number": req.job_number,
-            "need_by_date": req.need_by_date.strftime("%Y-%m-%d"),
+            "need_by_date": req.need_by_date.strftime("%Y-%m-%d"),  # ✅ safe; it's a date
             "notes": req.notes,
             "requested_items": [
                 {"item_name": it.item_name or "", "quantity": it.quantity}
