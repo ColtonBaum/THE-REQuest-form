@@ -7,10 +7,7 @@ from datetime import datetime, date
 public_bp = Blueprint("public", __name__, url_prefix="")
 
 def _clean_int(val):
-    """
-    Return an int made from the digits in `val` (e.g., "50'", "2ea" -> 50, 2).
-    Returns None if no digits are present.
-    """
+    """Return int from any input containing digits; None if empty/invalid."""
     if val is None:
         return None
     s = str(val).strip()
@@ -22,21 +19,19 @@ def _clean_int(val):
     except ValueError:
         return None
 
-def _parse_need_by(val):
+def _to_yyyy_mm_dd(value):
     """
-    Normalize the need_by_date from the form to a `date` object.
-    Accepts date, datetime, or 'YYYY-MM-DD' string. Returns None if invalid/empty.
+    Accepts either a WTForms date (datetime.date), a string 'YYYY-MM-DD',
+    or something else. Returns a validated 'YYYY-MM-DD' string or None.
     """
-    if isinstance(val, date) and not isinstance(val, datetime):
-        return val
-    if isinstance(val, datetime):
-        return val.date()
-    if isinstance(val, str):
-        s = val.strip()
-        if not s:
-            return None
+    if isinstance(value, date):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, str):
+        s = value.strip()
         try:
-            return datetime.strptime(s, "%Y-%m-%d").date()
+            # validate format
+            datetime.strptime(s, "%Y-%m-%d")
+            return s
         except ValueError:
             return None
     return None
@@ -49,34 +44,32 @@ def make_request():
     print(f"▶️ FORM DATA: {request.form}")
 
     if form.validate_on_submit():
-        need_by = _parse_need_by(form.need_by_date.data)
-        if need_by is None:
-            flash("Please provide a valid Need By Date.", "warning")
+        # Normalize need_by_date to a YYYY-MM-DD string (since the column is String)
+        nbd_str = _to_yyyy_mm_dd(form.need_by_date.data)
+        if not nbd_str:
+            flash("Please select a valid date.", "warning")
             return render_template("public/request_form.html", form=form)
 
         req = Request(
             employee_name=form.employee_name.data,
             job_name=form.job_name.data,
             job_number=form.job_number.data,
-            need_by_date=need_by,  # ✅ date object for DB
+            need_by_date=nbd_str,   # store as string
             notes=form.notes.data,
         )
 
         saved_any = False
-
-        for idx, item in enumerate(form.items, start=1):
-            name_raw = item.item_name.data or ""
-            name = name_raw.strip()
-            qty_raw = item.quantity.data
-            qty = _clean_int(qty_raw)
+        for item in form.items:
+            name = (item.item_name.data or "").strip()
+            qty  = _clean_int(item.quantity.data)
 
             # Skip truly blank rows
             if not name and qty is None:
                 continue
 
+            # If they typed something but qty didn't parse, fail fast with a message
             if qty is None:
-                display_name = name if name else "item"
-                flash(f"Row {idx}: Quantity for '{display_name}' must be numbers only.", "warning")
+                flash(f"Quantity for '{name or 'item'}' must be numbers only.", "warning")
                 return render_template("public/request_form.html", form=form)
 
             req.items.append(RequestItem(item_name=name or None, quantity=qty))
@@ -102,11 +95,12 @@ def make_request():
             "job_number": req.job_number
         })
 
+        # Build confirmation payload using the normalized string date
         submitted_data = {
             "employee_name": req.employee_name,
             "job_name": req.job_name,
             "job_number": req.job_number,
-            "need_by_date": req.need_by_date.strftime("%Y-%m-%d"),  # ✅ safe; it's a date
+            "need_by_date": nbd_str,
             "notes": req.notes,
             "requested_items": [
                 {"item_name": it.item_name or "", "quantity": it.quantity}
