@@ -6,7 +6,7 @@
   <div class="card mx-auto" style="max-width:600px;">
     <div class="card-body">
       <h4 class="card-title text-center mb-4">Tooling/Trailer Request</h4>
-      <form method="post">
+      <form method="post" autocomplete="off">
         {{ form.hidden_tag() }}
 
         <div class="mb-3">
@@ -36,7 +36,13 @@
             </div>
             <div class="col-4 col-md-3">
               {{ subform.quantity.label }}
-              {{ subform.quantity(class="form-control", placeholder="e.g., 1 set / N/A") }}
+              {{ subform.quantity(
+                   class="form-control qty-input",
+                   placeholder="e.g., 1",
+                   inputmode="numeric",
+                   pattern="[0-9]*",
+                   autocomplete="off"
+                 ) }}
             </div>
           </div>
           {% endfor %}
@@ -58,7 +64,7 @@
 </div>
 
 <script>
-(function() {
+(function () {
   const itemsDiv = document.getElementById('items');
   const addBtn = document.getElementById('add-item');
 
@@ -67,26 +73,48 @@
   }
 
   function reindexRow(row, newIdx) {
-    // Update inputs (name/id) and clear values
     row.querySelectorAll('input').forEach((input) => {
       if (input.name) input.name = input.name.replace(/items-\d+-/, `items-${newIdx}-`);
       if (input.id)   input.id   = input.id.replace(/items-\d+-/, `items-${newIdx}-`);
       input.value = '';
     });
-    // Update labels' for attribute
     row.querySelectorAll('label').forEach((label) => {
       const f = label.getAttribute('for');
       if (f) label.setAttribute('for', f.replace(/items-\d+-/, `items-${newIdx}-`));
     });
   }
 
+  // Guards for quantity fields: allow digits only (blocks quotes, letters, etc.)
+  function attachQtyGuards(el) {
+    // Block non-digits while typing
+    el.addEventListener('beforeinput', (e) => {
+      if (e.data && /[^\d]/.test(e.data)) e.preventDefault();
+    });
+    // Scrub anything that slips in (autofill, programmatic changes)
+    el.addEventListener('input', () => {
+      const cleaned = el.value.replace(/\D+/g, '');
+      if (el.value !== cleaned) el.value = cleaned;
+    });
+    // Paste guard
+    el.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+      el.value = text.replace(/\D+/g, '');
+    });
+  }
+
+  // Attach guards to existing qty inputs
+  document.querySelectorAll('.qty-input').forEach(attachQtyGuards);
+
   addBtn.addEventListener('click', () => {
     const rows = itemsDiv.querySelectorAll('.item-row');
-    if (rows.length === 0) return; // safety
+    if (rows.length === 0) return;
     const base = rows[0];
     const clone = base.cloneNode(true);
     reindexRow(clone, nextIndex());
     itemsDiv.appendChild(clone);
+    // Attach guards to the new row's qty input(s)
+    clone.querySelectorAll('.qty-input').forEach(attachQtyGuards);
   });
 })();
 </script>
