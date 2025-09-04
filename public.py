@@ -6,11 +6,13 @@ from sqlalchemy.exc import SQLAlchemyError
 public_bp = Blueprint("public", __name__, url_prefix="")
 
 def _clean_int(val):
-    """Return int from any input containing digits; None if empty/invalid."""
+    """
+    Return an int made from the digits in `val` (e.g., "50'", "2ea" -> 50, 2).
+    Returns None if no digits are present.
+    """
     if val is None:
         return None
     s = str(val).strip()
-    # keep digits only (blocks things like 50', 2ea, etc.)
     digits = "".join(ch for ch in s if ch.isdigit())
     if digits == "":
         return None
@@ -31,25 +33,34 @@ def make_request():
             employee_name=form.employee_name.data,
             job_name=form.job_name.data,
             job_number=form.job_number.data,
-            need_by_date=form.need_by_date.data,   # WTForms date field -> date object
+            need_by_date=form.need_by_date.data,  # WTForms DateField -> date
             notes=form.notes.data,
         )
 
         saved_any = False
-        for item in form.items:
-            name = (item.item_name.data or "").strip()
-            qty  = _clean_int(item.quantity.data)
 
-            # Skip truly blank rows
+        # Enumerate for better error messages (1-based row numbers)
+        for idx, item in enumerate(form.items, start=1):
+            name_raw = item.item_name.data or ""
+            name = name_raw.strip()
+            qty_raw = item.quantity.data
+            qty = _clean_int(qty_raw)
+
+            # Skip truly blank rows (both empty)
             if not name and qty is None:
                 continue
 
-            # If they typed something but qty didn't parse, fail fast with a message
+            # If they typed a name but quantity didn't parse to digits, show an error
             if qty is None:
-                flash(f"Quantity for '{name or 'item'}' must be numbers only.", "warning")
+                display_name = name if name else "item"
+                flash(f"Row {idx}: Quantity for '{display_name}' must be numbers only.", "warning")
                 return render_template("public/request_form.html", form=form)
 
-            req.items.append(RequestItem(item_name=name or None, quantity=qty))
+            # At this point qty is a valid int
+            req.items.append(RequestItem(
+                item_name=name or None,  # allow blank item names as NULL if you want
+                quantity=qty             # integer column in DB
+            ))
             saved_any = True
 
         if not saved_any:
@@ -59,7 +70,7 @@ def make_request():
         try:
             db.session.add(req)
             db.session.commit()
-        except SQLAlchemyError as e:
+        except SQLAlchemyError:
             db.session.rollback()
             current_app.logger.exception("Failed to save request")
             flash("There was a problem saving your request. Please try again.", "danger")
@@ -72,7 +83,7 @@ def make_request():
             "job_number": req.job_number
         })
 
-        # Build confirmation payload from the sanitized/saved data
+        # Build confirmation payload from saved data
         submitted_data = {
             "employee_name": req.employee_name,
             "job_name": req.job_name,
