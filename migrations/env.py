@@ -14,7 +14,8 @@ from models import db  # must succeed
 
 config = context.config
 
-if config.config_file_name is not None:
+# ✅ Only load logging config if the referenced ini file actually exists
+if config.config_file_name and os.path.exists(config.config_file_name):
     fileConfig(config.config_file_name)
 
 target_metadata = db.metadata
