@@ -1,0 +1,73 @@
+{% extends "admin/base.html" %}
+{% block title %}Project Managers{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Project Managers</h2>
+
+    <!-- Add new PM -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Add New PM</h5>
+            <form method="POST" action="{{ url_for('admin.pm_add') }}" class="row g-2 align-items-end">
+                {{ form.hidden_tag() }}
+                <div class="col-auto">
+                    {{ form.name(class="form-control", placeholder="Full name") }}
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PM list -->
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Jobs</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pm in pms %}
+            <tr class="{{ 'table-secondary' if not pm.is_active }}">
+                <td>{{ pm.name }}</td>
+                <td>{{ pm.jobs.count() }}</td>
+                <td>
+                    {% if pm.is_active %}
+                        <span class="badge bg-success">Active</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    {% if pm.is_active %}
+                    <form method="POST" action="{{ url_for('admin.pm_deactivate', pm_id=pm.id) }}"
+                          class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-warning">Deactivate</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('admin.pm_activate', pm_id=pm.id) }}"
+                          class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-success">Reactivate</button>
+                    </form>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('admin.pm_delete', pm_id=pm.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('Delete {{ pm.name }}? This cannot be undone.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

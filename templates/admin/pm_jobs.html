@@ -1,0 +1,118 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ pm.name }} – Jobs{% endblock %}
+
+{% block admin_content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.jobs_list') }}">Jobs</a></li>
+            <li class="breadcrumb-item active">{{ pm.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ pm.name }}</h2>
+        <a href="{{ url_for('admin.new_job', pm_id=pm.id) }}" class="btn btn-primary">
+            + New Job for {{ pm.name }}
+        </a>
+    </div>
+
+    <!-- Active Jobs -->
+    <h5 class="mb-3">Active Jobs <span class="badge bg-primary">{{ active_jobs|length }}</span></h5>
+    {% if active_jobs %}
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Job Name</th>
+                    <th>Job Number</th>
+                    <th>Start Date</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for job in active_jobs %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('admin.job_detail', job_id=job.id) }}">
+                            {{ job.name }}
+                        </a>
+                    </td>
+                    <td>{{ job.number }}</td>
+                    <td>{{ job.start_date.strftime('%m/%d/%Y') if job.start_date else '' }}</td>
+                    <td>
+                        {% if job.status == 'Not started' %}
+                            <span class="badge bg-secondary">{{ job.status }}</span>
+                        {% elif job.status == 'In progress' %}
+                            <span class="badge bg-primary">{{ job.status }}</span>
+                        {% elif job.status == 'Complete' %}
+                            <span class="badge bg-success">{{ job.status }}</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark">{{ job.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{{ url_for('admin.edit_job', job_id=job.id) }}"
+                           class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form method="POST" action="{{ url_for('admin.archive_job', job_id=job.id) }}"
+                              class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-warning">Archive</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">No active jobs for {{ pm.name }}.</p>
+    {% endif %}
+
+    <!-- Archived Jobs (collapsed by default) -->
+    {% if archived_jobs %}
+    <div class="mt-4">
+        <h5>
+            <a class="text-decoration-none" data-bs-toggle="collapse" href="#archivedJobs"
+               role="button" aria-expanded="false">
+                Archived Jobs <span class="badge bg-secondary">{{ archived_jobs|length }}</span>
+                <small class="text-muted">(click to expand)</small>
+            </a>
+        </h5>
+        <div class="collapse" id="archivedJobs">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Job Name</th>
+                            <th>Job Number</th>
+                            <th>Start Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for job in archived_jobs %}
+                        <tr class="table-secondary">
+                            <td>
+                                <a href="{{ url_for('admin.job_detail', job_id=job.id) }}">
+                                    {{ job.name }}
+                                </a>
+                            </td>
+                            <td>{{ job.number }}</td>
+                            <td>{{ job.start_date.strftime('%m/%d/%Y') if job.start_date else '' }}</td>
+                            <td class="text-end">
+                                <a href="{{ url_for('admin.edit_job', job_id=job.id) }}"
+                                   class="btn btn-sm btn-outline-secondary">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

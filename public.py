@@ -2,9 +2,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from models import db, Request, RequestItem
 from forms import RequestForm
 from sqlalchemy.exc import SQLAlchemyError
-from datetime import datetime, date
+from datetime import datetime
 
 public_bp = Blueprint("public", __name__, url_prefix="")
+
 
 def _clean_int(val):
     """Return int from any input containing digits; None if empty/invalid."""
@@ -19,43 +20,21 @@ def _clean_int(val):
     except ValueError:
         return None
 
-def _to_yyyy_mm_dd(value):
-    """
-    Accepts either a WTForms date (datetime.date), a string 'YYYY-MM-DD',
-    or something else. Returns a validated 'YYYY-MM-DD' string or None.
-    """
-    if isinstance(value, date):
-        return value.strftime("%Y-%m-%d")
-    if isinstance(value, str):
-        s = value.strip()
-        try:
-            # validate format
-            datetime.strptime(s, "%Y-%m-%d")
-            return s
-        except ValueError:
-            return None
-    return None
 
 @public_bp.route("/", methods=["GET", "POST"])
 @public_bp.route("/submit", methods=["GET", "POST"])
 def make_request():
     form = RequestForm()
-    print(f"▶️ METHOD: {request.method}")
-    print(f"▶️ FORM DATA: {request.form}")
 
     if form.validate_on_submit():
-        # Normalize need_by_date to a YYYY-MM-DD string (since the column is String)
-        nbd_str = _to_yyyy_mm_dd(form.need_by_date.data)
-        if not nbd_str:
-            flash("Please select a valid date.", "warning")
-            return render_template("public/request_form.html", form=form)
-
+        # need_by_date is now a proper date object from the DateField — no conversion needed
         req = Request(
             employee_name=form.employee_name.data,
             job_name=form.job_name.data,
             job_number=form.job_number.data,
-            need_by_date=nbd_str,   # store as string
+            need_by_date=form.need_by_date.data,
             notes=form.notes.data,
+            status="Not started",
         )
 
         saved_any = False
@@ -63,11 +42,9 @@ def make_request():
             name = (item.item_name.data or "").strip()
             qty  = _clean_int(item.quantity.data)
 
-            # Skip truly blank rows
             if not name and qty is None:
                 continue
 
-            # If they typed something but qty didn't parse, fail fast with a message
             if qty is None:
                 flash(f"Quantity for '{name or 'item'}' must be numbers only.", "warning")
                 return render_template("public/request_form.html", form=form)
@@ -92,15 +69,14 @@ def make_request():
         current_app.socketio.emit("new_request_submitted", {
             "employee_name": req.employee_name,
             "job_name": req.job_name,
-            "job_number": req.job_number
+            "job_number": req.job_number,
         })
 
-        # Build confirmation payload using the normalized string date
         submitted_data = {
             "employee_name": req.employee_name,
             "job_name": req.job_name,
             "job_number": req.job_number,
-            "need_by_date": nbd_str,
+            "need_by_date": req.need_by_date.strftime("%Y-%m-%d") if req.need_by_date else "",
             "notes": req.notes,
             "requested_items": [
                 {"item_name": it.item_name or "", "quantity": it.quantity}
@@ -110,6 +86,7 @@ def make_request():
         return render_template("public/submitted.html", data=submitted_data)
 
     return render_template("public/request_form.html", form=form)
+
 
 @public_bp.route("/submitted")
 def submitted():

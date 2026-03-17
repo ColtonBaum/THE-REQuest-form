@@ -1,37 +1,129 @@
 {% extends "admin/base.html" %}
-
-{% block title %}Fulfill Request #{{ request.id }}{% endblock %}
+{% block title %}Fulfill Request #{{ req.id }}{% endblock %}
 
 {% block admin_content %}
-<div class="container py-4">
-  <h3>Request #{{ request.id }}</h3>
-  <p>
-    <strong>Employee:</strong> {{ request.employee_name }}<br>
-    <strong>Need by:</strong> {{ request.need_by_date }}
-  </p>
+<div class="container mt-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.list_requests') }}">Requests</a></li>
+            <li class="breadcrumb-item active">Fulfill #{{ req.id }}</li>
+        </ol>
+    </nav>
 
-  <table class="table table-sm">
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Quantity</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in request.items %}
-      <tr>
-        <td>{{ item.item_name }}</td>
-        <td>{{ item.quantity }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    <h2>Fulfill Request #{{ req.id }}</h2>
 
-  <div class="mt-3">
-    <a href="{{ url_for('admin.job_detail', job_id=request.job_id) }}#requests"
-       class="btn btn-secondary">
-      ← Go Back
-    </a>
-  </div>
+    <!-- Request Summary -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Employee:</strong> {{ req.employee_name }}</p>
+                    <p><strong>Job:</strong> {{ req.job_name }} ({{ req.job_number }})</p>
+                    <p><strong>Need by:</strong>
+                        {{ req.need_by_date.strftime('%m/%d/%Y') if req.need_by_date else 'N/A' }}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Notes:</strong> {{ req.notes or 'None' }}</p>
+                    <p><strong>Status:</strong> {{ req.status }}</p>
+                </div>
+            </div>
+
+            <h6>Requested Items:</h6>
+            <ul>
+                {% for item in req.items %}
+                <li>{{ item.item_name or 'Unnamed' }} – Qty: {{ item.quantity or 'N/A' }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Fulfill Form -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Assign Equipment & Complete</h5>
+            <form method="POST" action="{{ url_for('admin.fulfill', req_id=req.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-3">
+                    <label for="equipment_search" class="form-label">
+                        Equipment / Trailer Assigned
+                    </label>
+                    <input type="text" id="equipment_search" class="form-control mb-2"
+                           placeholder="Start typing to search equipment..."
+                           autocomplete="off">
+                    <div id="search_results" class="list-group mb-2" style="display:none;"></div>
+
+                    <textarea name="equipment_assigned" id="equipment_assigned"
+                              class="form-control" rows="3"
+                              placeholder="Selected equipment will appear here. You can also type freely.">{{ req.equipment_assigned or '' }}</textarea>
+                    <div class="form-text">
+                        Search for equipment above, or type/paste details manually.
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        Mark as Complete
+                    </button>
+                    <a href="{{ url_for('admin.list_requests') }}" class="btn btn-outline-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
+
+<script>
+(function() {
+    const searchInput = document.getElementById('equipment_search');
+    const resultsDiv  = document.getElementById('search_results');
+    const textarea    = document.getElementById('equipment_assigned');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 2) {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+        debounceTimer = setTimeout(function() {
+            fetch('{{ url_for("admin.api_equipment_search") }}?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    resultsDiv.innerHTML = '';
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="list-group-item text-muted">No results</div>';
+                    } else {
+                        data.forEach(function(item) {
+                            const el = document.createElement('a');
+                            el.href = '#';
+                            el.className = 'list-group-item list-group-item-action';
+                            el.innerHTML = '<strong>' + item.label + '</strong>' +
+                                '<br><small class="text-muted">Currently: ' + item.current_job + '</small>';
+                            el.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                const current = textarea.value.trim();
+                                const line = item.label;
+                                textarea.value = current ? current + '\n' + line : line;
+                                searchInput.value = '';
+                                resultsDiv.style.display = 'none';
+                            });
+                            resultsDiv.appendChild(el);
+                        });
+                    }
+                    resultsDiv.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+        }
+    });
+})();
+</script>
 {% endblock %}

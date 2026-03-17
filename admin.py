@@ -3,21 +3,42 @@ import io
 
 from flask import (
     Blueprint, render_template, request as flask_req,
-    redirect, url_for, flash, make_response, current_app
+    redirect, url_for, flash, make_response, current_app, jsonify
 )
-from sqlalchemy import and_, not_
+from sqlalchemy import and_, not_, case, or_
 from sqlalchemy.orm import joinedload
 from datetime import datetime
-from models import db, Request, Job, Asset, RequestItem
-from forms import JobForm, AssetForm, RequestForm
+from models import db, Request, Job, Asset, RequestItem, ProjectManager, AssetAssignment, STATUS_SORT_ORDER
+from forms import JobForm, AssetForm, RequestForm, ProjectManagerForm
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
-# -- Requests Routes ---------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+def _pm_choices():
+    pms = (
+        ProjectManager.query
+        .filter_by(is_active=True)
+        .order_by(ProjectManager.display_order, ProjectManager.name)
+        .all()
+    )
+    return [(pm.id, pm.name) for pm in pms]
+
+
+# ===========================================================================
+# REQUESTS
+# ===========================================================================
 
 @admin_bp.route("/requests")
 def list_requests():
+    status_order = case(
+        STATUS_SORT_ORDER,
+        value=Request.status,
+        else_=1,
+    )
+
     all_reqs = (
         Request.query
         .filter(
@@ -28,9 +49,10 @@ def list_requests():
                 )
             )
         )
-        .order_by(Request.submitted_at.desc())
+        .order_by(status_order, Request.submitted_at.desc())
         .all()
     )
+
     jobs = (
         Job.query
         .filter_by(archived=False)
@@ -55,22 +77,7 @@ def delete_request(req_id):
 def edit_request(req_id):
     req = Request.query.get_or_404(req_id)
 
-    # Ensure need_by_date is a date object (not a raw string)
-    if isinstance(req.need_by_date, str) and req.need_by_date:
-        parsed_date = None
-        try:
-            # Try ISO parsing (handles "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS")
-            parsed_date = datetime.fromisoformat(req.need_by_date).date()
-        except ValueError:
-            # Fallback to strict YYYY-MM-DD
-            try:
-                parsed_date = datetime.strptime(req.need_by_date, "%Y-%m-%d").date()
-            except ValueError:
-                parsed_date = None
-        req.need_by_date = parsed_date
-
     if flask_req.method == "GET":
-        # Pre-populate form from the DB on GET
         form = RequestForm(obj=req)
         form.items.entries = []
         for item in req.items:
@@ -79,20 +86,15 @@ def edit_request(req_id):
                 "quantity":  item.quantity,
             })
     else:
-        # On POST, bind only submitted form data (so new items are parsed)
-        current_app.logger.debug(f"📋 Raw form keys: {list(flask_req.form.keys())}")
         form = RequestForm(flask_req.form)
-        current_app.logger.debug(f"🧩 Parsed items count={len(form.items.data)}, data={form.items.data}")
 
     if form.validate_on_submit():
-        # Update core fields
         req.employee_name = form.employee_name.data
         req.job_name      = form.job_name.data
         req.job_number    = form.job_number.data
         req.need_by_date  = form.need_by_date.data
         req.notes         = form.notes.data
 
-        # Rebuild items list (skip blank rows)
         req.items.clear()
         for entry in form.items.data:
             name = (entry.get("item_name") or "").strip()
@@ -129,13 +131,31 @@ def assign_request(req_id):
 @admin_bp.route("/requests/<int:req_id>/fulfill", methods=["GET", "POST"])
 def fulfill(req_id):
     req = Request.query.get_or_404(req_id)
+    assets = Asset.query.order_by(Asset.group, Asset.identifier).all()
+
     if flask_req.method == "POST":
-        # your fulfill logic here
+        # Save equipment assignment
+        equipment = flask_req.form.get("equipment_assigned", "").strip()
+        req.equipment_assigned = equipment if equipment else None
+        req.status = "Complete"
+        db.session.commit()
+        flash(f"Request #{req_id} fulfilled.", "success")
         return redirect(url_for("admin.list_requests"))
-    return render_template("admin/fulfill_request.html", request=req)
+
+    return render_template("admin/fulfill_request.html",
+                           req=req, assets=assets)
 
 
-# New: Create Request (Admin) -----------------------------------------------
+@admin_bp.route("/requests/<int:req_id>/assign_equipment", methods=["POST"])
+def assign_equipment(req_id):
+    """Quick endpoint to assign equipment to a request without full fulfill."""
+    req = Request.query.get_or_404(req_id)
+    equipment = flask_req.form.get("equipment_assigned", "").strip()
+    req.equipment_assigned = equipment if equipment else None
+    db.session.commit()
+    flash(f"Equipment updated for Request #{req_id}.", "success")
+    return redirect(flask_req.referrer or url_for("admin.list_requests"))
+
 
 @admin_bp.route("/requests/new", methods=["GET", "POST"])
 def new_request():
@@ -151,9 +171,8 @@ def new_request():
             submitted_at=datetime.utcnow(),
         )
         db.session.add(req)
-        db.session.flush()  # get req.id before adding items
+        db.session.flush()
 
-        # Add items, skipping blank rows
         for entry in form.items.data:
             name = (entry.get("item_name") or "").strip()
             qty  = (entry.get("quantity") or "").strip()
@@ -179,7 +198,7 @@ def export_csv():
     writer.writerow([
         "Req ID", "Employee Name", "Job Name", "Job Number",
         "Need by Date", "Submitted At", "Status", "Notes",
-        "Item Name", "Quantity"
+        "Equipment Assigned", "Item Name", "Quantity"
     ])
     for r in Request.query.order_by(Request.submitted_at):
         for item in r.items:
@@ -188,17 +207,17 @@ def export_csv():
                 r.employee_name,
                 r.job_name,
                 r.job_number,
-                r.need_by_date,
+                r.need_by_date.strftime("%Y-%m-%d") if r.need_by_date else "",
                 r.submitted_at.strftime("%Y-%m-%d %H:%M:%S"),
                 r.status,
                 r.notes,
+                r.equipment_assigned or "",
                 item.item_name,
                 item.quantity,
             ])
     resp = make_response(output.getvalue())
     resp.headers["Content-Type"] = "text/csv"
-    resp.headers["Content-Disposition"] = \
-        "attachment; filename=requests_export.csv"
+    resp.headers["Content-Disposition"] = "attachment; filename=requests_export.csv"
     return resp
 
 
@@ -209,84 +228,147 @@ def update_status(req_id):
     if new in ["Not started", "In progress", "Complete"]:
         req.status = new
         db.session.commit()
-        flash(f"Request #{req_id} set to “{new}”.", "success")
+        flash(f"Request #{req_id} set to \u201c{new}\u201d.", "success")
     return redirect(url_for("admin.list_requests"))
 
-# -- Jobs Routes -------------------------------------------------------------
+
+# ===========================================================================
+# JOBS — Restructured: PM list → click into PM → see their jobs
+# ===========================================================================
 
 @admin_bp.route("/jobs")
 def jobs_list():
-    pm_tabs = [
-        "Home", "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
-        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
-        "Nate's Projects", "Other"
-    ]
-    jobs_by_pm = {
-        "Home": (
+    """Main jobs page: shows list of PMs to click into."""
+    pms = (
+        ProjectManager.query
+        .filter_by(is_active=True)
+        .order_by(ProjectManager.display_order, ProjectManager.name)
+        .all()
+    )
+
+    # Count active jobs per PM for the cards
+    pm_data = []
+    for pm in pms:
+        active_count = (
             Job.query
-            .filter_by(archived=False)
-            .order_by(Job.start_date.desc())
+            .filter_by(manager_id=pm.id, archived=False)
+            .count()
+        )
+        pm_data.append({
+            "pm": pm,
+            "active_jobs": active_count,
+        })
+
+    # Equipment search
+    search_query = flask_req.args.get("q", "").strip()
+    search_results = []
+    if search_query:
+        search_results = (
+            Asset.query
+            .options(joinedload(Asset.current_job))
+            .filter(
+                or_(
+                    Asset.serial_number.ilike(f"%{search_query}%"),
+                    Asset.identifier.ilike(f"%{search_query}%"),
+                    Asset.group.ilike(f"%{search_query}%"),
+                )
+            )
+            .order_by(Asset.group, Asset.identifier)
             .all()
         )
-    }
-    for pm in pm_tabs[1:]:
-        jobs_by_pm[pm] = (
-            Job.query
-            .filter_by(manager=pm, archived=False)
-            .order_by(Job.start_date.desc())
-            .all()
-        )
+
     return render_template("admin/jobs_list.html",
-                           pm_tabs=pm_tabs,
-                           jobs_by_pm=jobs_by_pm)
+                           pm_data=pm_data,
+                           search_query=search_query,
+                           search_results=search_results)
+
+
+@admin_bp.route("/jobs/pm/<int:pm_id>")
+def pm_jobs(pm_id):
+    """View all jobs for a specific PM."""
+    pm = ProjectManager.query.get_or_404(pm_id)
+    active_jobs = (
+        Job.query
+        .filter_by(manager_id=pm.id, archived=False)
+        .order_by(Job.start_date.desc())
+        .all()
+    )
+    archived_jobs = (
+        Job.query
+        .filter_by(manager_id=pm.id, archived=True)
+        .order_by(Job.start_date.desc())
+        .all()
+    )
+    return render_template("admin/pm_jobs.html",
+                           pm=pm,
+                           active_jobs=active_jobs,
+                           archived_jobs=archived_jobs)
+
 
 @admin_bp.route("/jobs/new", methods=["GET", "POST"])
 def new_job():
-    pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",
-        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
-        "Nate's Projects", "Other"
-    ]]
     form = JobForm()
-    form.manager.choices = pm_choices
+    form.manager.choices = _pm_choices()
+
+    # Pre-select PM if coming from a PM's page
+    preselect_pm = flask_req.args.get("pm_id")
+    if preselect_pm and flask_req.method == "GET":
+        form.manager.data = int(preselect_pm)
+
     if form.validate_on_submit():
+        pm = ProjectManager.query.get(form.manager.data)
         job = Job(
             name=form.name.data,
             number=form.number.data,
             start_date=form.start_date.data,
-            manager=form.manager.data,
+            manager_id=pm.id,
+            manager=pm.name,
             status="Not started"
         )
         db.session.add(job)
         db.session.commit()
         flash("New job created.", "success")
-        return redirect(url_for("admin.jobs_list"))
+        return redirect(url_for("admin.pm_jobs", pm_id=pm.id))
+
     return render_template("admin/job_form.html", form=form, job=None)
+
 
 @admin_bp.route("/jobs/<int:job_id>/edit", methods=["GET", "POST"])
 def edit_job(job_id):
     job = Job.query.get_or_404(job_id)
-    pm_choices = [(pm, pm) for pm in [
-        "Kaden Argyle", "Kade Evans", "Dan Lewis", "Jacob McNeil",  # fixed here
-        "Tiffany Chastain", "Josh Walsh", "Tayson Scott",
-        "Nate's Projects", "Other"
-    ]]
     form = JobForm(obj=job)
-    form.manager.choices = pm_choices
+    form.manager.choices = _pm_choices()
+
+    if flask_req.method == "GET" and job.manager_id:
+        form.manager.data = job.manager_id
+
     if form.validate_on_submit():
-        form.populate_obj(job)
+        pm = ProjectManager.query.get(form.manager.data)
+        job.name       = form.name.data
+        job.number     = form.number.data
+        job.start_date = form.start_date.data
+        job.manager_id = pm.id
+        job.manager    = pm.name
         db.session.commit()
         flash("Job updated.", "success")
-        return redirect(url_for("admin.jobs_list"))
+        return redirect(url_for("admin.pm_jobs", pm_id=pm.id))
+
     return render_template("admin/job_form.html", form=form, job=job)
+
 
 @admin_bp.route("/jobs/<int:job_id>/assign_manager", methods=["POST"])
 def assign_manager(job_id):
     job = Job.query.get_or_404(job_id)
-    job.manager = flask_req.form.get("manager")
-    db.session.commit()
-    flash(f"Job #{job_id} re-assigned to {job.manager}.", "success")
+    pm_id = flask_req.form.get("manager_id")
+    if pm_id:
+        pm = ProjectManager.query.get(int(pm_id))
+        if pm:
+            job.manager_id = pm.id
+            job.manager = pm.name
+            db.session.commit()
+            flash(f"Job #{job_id} re-assigned to {pm.name}.", "success")
     return redirect(url_for("admin.jobs_list"))
+
 
 @admin_bp.route("/jobs/<int:job_id>/archive", methods=["POST"])
 def archive_job(job_id):
@@ -294,69 +376,154 @@ def archive_job(job_id):
     job.archived = True
     db.session.commit()
     flash("Job archived.", "warning")
-    return redirect(url_for("admin.jobs_list"))
+    return redirect(flask_req.referrer or url_for("admin.jobs_list"))
+
 
 @admin_bp.route("/jobs/<int:job_id>/delete", methods=["POST"])
 def delete_job(job_id):
     job = Job.query.get_or_404(job_id)
+    pm_id = job.manager_id
     db.session.delete(job)
     db.session.commit()
     flash(f"Job '{job.name}' deleted.", "danger")
+    if pm_id:
+        return redirect(url_for("admin.pm_jobs", pm_id=pm_id))
     return redirect(url_for("admin.jobs_list"))
+
 
 @admin_bp.route("/jobs/<int:job_id>")
 def job_detail(job_id):
     job = Job.query.get_or_404(job_id)
     assigned_assets = Asset.query.filter_by(current_job_id=job_id).all()
-    completed_reqs = (
+
+    # All requests for this job (not just completed)
+    job_requests = (
         Request.query
-        .filter_by(job_id=job_id, status="Complete")
+        .filter_by(job_id=job_id)
         .order_by(Request.submitted_at.desc())
         .all()
     )
-    jobs = Job.query.order_by(Job.start_date.desc()).all()
+
     return render_template("admin/job_detail.html",
                            job=job,
                            assigned_assets=assigned_assets,
-                           completed_reqs=completed_reqs,
-                           jobs=jobs)
+                           job_requests=job_requests)
 
-# -- Assets Routes -----------------------------------------------------------
+
+# ===========================================================================
+# EQUIPMENT SEARCH API (for AJAX autocomplete in fulfill form)
+# ===========================================================================
+
+@admin_bp.route("/api/equipment/search")
+def api_equipment_search():
+    """JSON endpoint for equipment search (used by fulfill form autocomplete)."""
+    q = flask_req.args.get("q", "").strip()
+    if not q or len(q) < 2:
+        return jsonify([])
+
+    results = (
+        Asset.query
+        .options(joinedload(Asset.current_job))
+        .filter(
+            or_(
+                Asset.serial_number.ilike(f"%{q}%"),
+                Asset.identifier.ilike(f"%{q}%"),
+                Asset.group.ilike(f"%{q}%"),
+            )
+        )
+        .limit(15)
+        .all()
+    )
+
+    return jsonify([
+        {
+            "id": a.id,
+            "group": a.group,
+            "identifier": a.identifier,
+            "serial_number": a.serial_number,
+            "current_job": a.current_job.name if a.current_job else "Unassigned",
+            "label": f"{a.group} - {a.identifier} (SN: {a.serial_number})",
+        }
+        for a in results
+    ])
+
+
+# ===========================================================================
+# PROJECT MANAGER MANAGEMENT
+# ===========================================================================
+
+@admin_bp.route("/pms")
+def pm_list():
+    pms = ProjectManager.query.order_by(ProjectManager.display_order, ProjectManager.name).all()
+    form = ProjectManagerForm()
+    return render_template("admin/pm_list.html", pms=pms, form=form)
+
+
+@admin_bp.route("/pms/add", methods=["POST"])
+def pm_add():
+    form = ProjectManagerForm()
+    if form.validate_on_submit():
+        max_order = db.session.query(db.func.max(ProjectManager.display_order)).scalar() or 0
+        pm = ProjectManager(
+            name=form.name.data.strip(),
+            is_active=True,
+            display_order=max_order + 1,
+        )
+        db.session.add(pm)
+        db.session.commit()
+        flash(f"Added PM: {pm.name}", "success")
+    return redirect(url_for("admin.pm_list"))
+
+
+@admin_bp.route("/pms/<int:pm_id>/deactivate", methods=["POST"])
+def pm_deactivate(pm_id):
+    pm = ProjectManager.query.get_or_404(pm_id)
+    pm.is_active = False
+    db.session.commit()
+    flash(f"{pm.name} deactivated.", "warning")
+    return redirect(url_for("admin.pm_list"))
+
+
+@admin_bp.route("/pms/<int:pm_id>/activate", methods=["POST"])
+def pm_activate(pm_id):
+    pm = ProjectManager.query.get_or_404(pm_id)
+    pm.is_active = True
+    db.session.commit()
+    flash(f"{pm.name} reactivated.", "success")
+    return redirect(url_for("admin.pm_list"))
+
+
+@admin_bp.route("/pms/<int:pm_id>/delete", methods=["POST"])
+def pm_delete(pm_id):
+    pm = ProjectManager.query.get_or_404(pm_id)
+    if pm.jobs.count() > 0:
+        flash(f"Can't delete {pm.name} — they have jobs assigned. Deactivate instead.", "danger")
+    else:
+        db.session.delete(pm)
+        db.session.commit()
+        flash(f"{pm.name} deleted.", "danger")
+    return redirect(url_for("admin.pm_list"))
+
+
+# ===========================================================================
+# ASSETS (kept temporarily — will be removed in later phase)
+# ===========================================================================
 
 @admin_bp.route("/assets")
 def assets_list():
-    # load all jobs for the assign dropdown
-    jobs = (
-        Job.query
-           .filter_by(archived=False)
-           .order_by(Job.start_date.desc())
-           .all()
-    )
-
-    # load every asset (with its current_job eager-loaded)
-    assets = (
-        Asset.query
-             .options(joinedload(Asset.current_job))
-             .all()
-    )
-
-    # find the “Shop” job (if it exists)
+    jobs = Job.query.filter_by(archived=False).order_by(Job.start_date.desc()).all()
+    assets = Asset.query.options(joinedload(Asset.current_job)).all()
     shop_job = next((j for j in jobs if j.name.lower() == "shop"), None)
 
-    # split assets
     if shop_job:
-        on_deck   = [a for a in assets if a.current_job_id == shop_job.id]
-        others    = [a for a in assets if a.current_job_id != shop_job.id]
+        on_deck = [a for a in assets if a.current_job_id == shop_job.id]
+        others  = [a for a in assets if a.current_job_id != shop_job.id]
     else:
         on_deck = []
         others  = assets
 
-    return render_template(
-      "admin/assets_list.html",
-      on_deck=on_deck,
-      others=others,
-      jobs=jobs
-    )
+    return render_template("admin/assets_list.html",
+                           on_deck=on_deck, others=others, jobs=jobs)
 
 
 @admin_bp.route("/assets/new", methods=["GET", "POST"])
@@ -364,17 +531,15 @@ def assets_new():
     form = AssetForm()
     if form.validate_on_submit():
         new_asset = Asset(
-            type          = form.group.data,
-            group         = form.group.data,
-            identifier    = form.identifier.data,
-            serial_number = form.serial_number.data
+            type=form.group.data, group=form.group.data,
+            identifier=form.identifier.data, serial_number=form.serial_number.data
         )
         db.session.add(new_asset)
         db.session.commit()
-        flash(f"Asset “{new_asset.group} – {new_asset.identifier}” created.",
-              "success")
+        flash(f"Asset \u201c{new_asset.group} \u2013 {new_asset.identifier}\u201d created.", "success")
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=None)
+
 
 @admin_bp.route("/assets/<int:asset_id>/edit", methods=["GET", "POST"])
 def edit_asset(asset_id):
@@ -390,20 +555,17 @@ def edit_asset(asset_id):
         return redirect(url_for("admin.assets_list"))
     return render_template("admin/asset_form.html", form=form, asset=asset)
 
+
 @admin_bp.route("/assets/<int:asset_id>/assign", methods=["POST"])
 def assign_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
     job_id = flask_req.form.get("job_id") or None
-
-    # assign the trailer (or standalone asset)
     asset.current_job_id = job_id
-
-    # if this is a “parent” (e.g. a trailer), cascade to its child LN assets
     for child in asset.children:
         child.current_job_id = job_id
-
     db.session.commit()
     return redirect(flask_req.referrer)
+
 
 @admin_bp.route("/assets/<int:asset_id>/unassign", methods=["POST"])
 def unassign_asset(asset_id):
@@ -412,13 +574,15 @@ def unassign_asset(asset_id):
     db.session.commit()
     return redirect(flask_req.referrer)
 
-# -- Reports Routes ---------------------------------------------------------
+
+# ===========================================================================
+# REPORTS
+# ===========================================================================
 
 @admin_bp.route("/reports")
 def reports():
     archived_jobs = (
-        Job.query
-        .filter_by(archived=True)
+        Job.query.filter_by(archived=True)
         .order_by(Job.start_date.desc())
         .all()
     )

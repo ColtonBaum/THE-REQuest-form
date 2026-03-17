@@ -1,167 +1,132 @@
 {% extends "admin/base.html" %}
-
-{% block title %}Job {{ job.number }}{% endblock %}
+{% block title %}{{ job.name }}{% endblock %}
 
 {% block admin_content %}
-<div class="mb-4">
-  <h2>Job: {{ job.name }} ({{ job.number }})</h2>
-  <p class="text-muted">
-    {{ job.location }} |
-    {{ job.start_date.strftime('%Y-%m-%d') }} |
-    Status: {{ job.status }}
-  </p>
-</div>
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.jobs_list') }}">Jobs</a></li>
+            {% if job.pm %}
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('admin.pm_jobs', pm_id=job.pm.id) }}">{{ job.pm.name }}</a>
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ job.name }}</li>
+        </ol>
+    </nav>
 
-<ul class="nav nav-tabs mb-3" id="jobTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active"
-            id="assets-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#assets"
-            type="button"
-            role="tab"
-            aria-controls="assets"
-            aria-selected="true">
-      Assets
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link"
-            id="requests-tab"
-            data-bs-toggle="tab"
-            data-bs-target="#requests"
-            type="button"
-            role="tab"
-            aria-controls="requests"
-            aria-selected="false">
-      Completed Requests
-    </button>
-  </li>
-</ul>
-
-<div class="tab-content">
-  <!-- Assets Tab -->
-  <div class="tab-pane fade show active" id="assets" role="tabpanel" aria-labelledby="assets-tab">
-    <a href="{{ url_for('admin.jobs_list') }}" class="btn btn-sm btn-outline-secondary mb-3">
-      ← Back to Jobs
-    </a>
-    <div class="table-responsive">
-      <table id="assets-table" class="table table-striped table-bordered align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>ID</th>
-            <th>Type</th>
-            <th>Identifier</th>
-            <th>Assigned At</th>
-            <th>Total Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% if assigned_assets %}
-            {% for a in assigned_assets %}
-            <tr>
-              <td>{{ a.id }}</td>
-              <td>{{ a.type }}</td>
-              <td>{{ a.identifier }}</td>
-              <td>
-                {% set dates = a.assignments
-                     | selectattr("job_id","equalto",job.id)
-                     | map(attribute="assigned_at")
-                     | list %}
-                {{ dates[0].strftime("%Y-%m-%d") if dates else "—" }}
-              </td>
-              <td><!-- TODO: calculate asset cost here --></td>
-            </tr>
-            {% endfor %}
-            <tr>
-              <td colspan="4" class="text-end"><strong>Total</strong></td>
-              <td><!-- TODO: sum of asset costs --></td>
-            </tr>
-          {% else %}
-          <tr>
-            <td colspan="5" class="text-center">No assets assigned.</td>
-          </tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Completed Requests Tab -->
-  <div class="tab-pane fade" id="requests" role="tabpanel" aria-labelledby="requests-tab">
-    <a href="{{ url_for('admin.jobs_list') }}" class="btn btn-sm btn-outline-secondary mb-3">
-      ← Back to Jobs
-    </a>
-    <div class="table-responsive">
-      <table id="job-requests-table" class="table table-striped table-bordered align-middle">
-        <thead class="table-dark">
-          <tr>
-            <th>ID</th>
-            <th>Name (ID)</th>
-            <th>Job Name</th>
-            <th>Job Number</th>
-            <th>Submitted</th>
-            <th>Items</th>
-            <th>Notes</th>
-            <th>Status / Reassign</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in completed_reqs %}
-          <tr>
-            <td>{{ r.id }}</td>
-            <td>{{ r.employee_name }} ({{ r.employee_id or '—' }})</td>
-            <td>
-              {% if r.job %}
-                <a href="{{ url_for('admin.job_detail', job_id=r.job.id) }}">
-                  {{ r.job.name }}
-                </a>
-              {% else %}
-                {{ r.job_name }}
-              {% endif %}
-            </td>
-            <td>{{ r.job.number if r.job else r.job_number }}</td>
-            <td>{{ r.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
-            <td class="px-3">
-              <ul class="mb-0 ps-3">
-                {% for i in r.items %}
-                  <li>{{ i.quantity }}× {{ i.item_name }}</li>
-                {% endfor %}
-              </ul>
-            </td>
-            <td>{{ r.notes or '—' }}</td>
-            <td>
-              <div>{{ r.status }}</div>
-              <form method="POST"
-                    action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>{{ job.name }}</h2>
+            <p class="text-muted mb-0">
+                Job #{{ job.number }}
+                {% if job.pm %} &middot; PM: {{ job.pm.name }}{% endif %}
+                &middot; Started: {{ job.start_date.strftime('%m/%d/%Y') if job.start_date else 'N/A' }}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.edit_job', job_id=job.id) }}"
+               class="btn btn-outline-primary">Edit</a>
+            <form method="POST" action="{{ url_for('admin.archive_job', job_id=job.id) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <select name="job_id" class="form-select form-select-sm mt-1">
-                  {% for j in jobs %}
-                    <option value="{{ j.id }}" {% if r.job_id == j.id %}selected{% endif %}>
-                      {{ j.name }} ({{ j.number }})
-                    </option>
-                  {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-sm btn-outline-primary mt-1">
-                  Reassign
-                </button>
-              </form>
-            </td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="8" class="text-center">No completed requests.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                <button class="btn btn-outline-warning">Archive</button>
+            </form>
+        </div>
     </div>
-  </div>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-  $.fn.dataTable.ext.errMode = 'none'; // Suppress DataTables warning popup
-</script>
+    <!-- Assigned Assets -->
+    {% if assigned_assets %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Equipment on This Job</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Identifier</th>
+                            <th>Serial Number</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asset in assigned_assets %}
+                        <tr>
+                            <td>{{ asset.group }}</td>
+                            <td>{{ asset.identifier }}</td>
+                            <td><code>{{ asset.serial_number }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Requests for this Job -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">
+                Requests
+                <span class="badge bg-secondary">{{ job_requests|length }}</span>
+            </h5>
+            {% if job_requests %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Employee</th>
+                            <th>Submitted</th>
+                            <th>Status</th>
+                            <th>Equipment Assigned</th>
+                            <th>Items</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in job_requests %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('admin.request_detail', req_id=req.id) }}">
+                                    #{{ req.id }}
+                                </a>
+                            </td>
+                            <td>{{ req.employee_name }}</td>
+                            <td>{{ req.submitted_at.strftime('%m/%d/%Y') if req.submitted_at else '' }}</td>
+                            <td>
+                                {% if req.status == 'Not started' %}
+                                    <span class="badge bg-secondary">{{ req.status }}</span>
+                                {% elif req.status == 'In progress' %}
+                                    <span class="badge bg-primary">{{ req.status }}</span>
+                                {% elif req.status == 'Complete' %}
+                                    <span class="badge bg-success">{{ req.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ req.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if req.equipment_assigned %}
+                                    <small>{{ req.equipment_assigned }}</small>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for item in req.items %}
+                                    {{ item.item_name or 'Unnamed' }}
+                                    ({{ item.quantity or '?' }}){{ ',' if not loop.last }}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">No requests assigned to this job yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}
