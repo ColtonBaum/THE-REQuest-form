@@ -432,19 +432,24 @@ input[required]:focus {
     width: 100%;
   }
   #requests-table tr {
-    margin-bottom: 0.75rem;
-    border: 1px solid var(--gray-200);
+    margin-bottom: 1rem;
+    border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
     background: #fff;
-    box-shadow: var(--shadow-sm);
-    padding: 0.25rem 0;
+    box-shadow: var(--shadow-md);
+    padding: 0;
+    overflow: hidden;
   }
   #requests-table td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     text-align: right;
     position: relative;
     border: none;
-    border-bottom: 1px solid var(--gray-100);
+    border-bottom: 1px solid var(--gray-200);
+    background: #fff;
+  }
+  #requests-table td:nth-child(odd) {
+    background: var(--gray-50);
   }
   #requests-table td:last-child {
     border-bottom: none;
@@ -453,10 +458,10 @@ input[required]:focus {
     content: attr(data-label);
     float: left;
     font-weight: 600;
-    color: var(--gray-600);
-    font-size: 0.8rem;
+    color: var(--navy);
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
   }
 }
 
