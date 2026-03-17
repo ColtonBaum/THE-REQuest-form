@@ -219,27 +219,33 @@ a.card:hover .card-title {
 /* -- Tables ------------------------------------------------- */
 .table {
   font-size: 0.875rem;
+  color: var(--gray-700);
 }
 
 .table thead th {
-  background: var(--gray-50);
-  color: var(--gray-600);
+  background: var(--navy);
+  color: rgba(255,255,255,0.85);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
-  border-bottom: 2px solid var(--gray-200);
+  border-bottom: none;
   padding: 0.75rem;
 }
 
 .table tbody td {
   padding: 0.75rem;
   vertical-align: middle;
-  border-color: var(--gray-100);
+  border-color: var(--gray-200);
+  background: var(--gray-50);
 }
 
-.table-hover tbody tr:hover {
-  background: var(--sky-subtle);
+.table tbody tr:nth-child(even) td {
+  background: var(--gray-100);
+}
+
+.table-hover tbody tr:hover td {
+  background: #e8edf4;
 }
 
 /* -- Badges ------------------------------------------------- */

@@ -2,52 +2,24 @@
 {% block title %}All Requests{% endblock %}
 
 {% block admin_content %}
-<div class="container-fluid py-4">
+<div class="py-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3 class="text-dark-blue">Current Requests</h3>
-    <a href="{{ url_for('admin.export_csv') }}" class="btn btn-sm btn-outline-success">Export CSV</a>
+    <h2 class="mb-0">Requests</h2>
   </div>
 
-  <!-- Responsive CSS for small screens -->
-  <style>
-    @media (max-width: 767px) {
-      #requests-table thead { display: none; }
-      #requests-table, #requests-table tbody, #requests-table tr, #requests-table td {
-        display: block;
-        width: 100%;
-      }
-      #requests-table tr {
-        margin-bottom: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: .25rem;
-      }
-      #requests-table td {
-        padding: .5rem;
-        text-align: right;
-        position: relative;
-      }
-      #requests-table td:before {
-        content: attr(data-label) ": ";
-        float: left;
-        font-weight: 600;
-      }
-    }
-  </style>
-
-  <div class="card shadow-sm">
+  <div class="card">
     <div class="card-body table-responsive">
       <table id="requests-table"
-             class="table table-bordered align-middle"
-             style="background-color: #f0f2f5;">
-        <thead class="table-primary text-dark">
+             class="table table-hover align-middle mb-0">
+        <thead>
           <tr>
             <th>ID</th>
             <th>Name</th>
             <th>Job Name</th>
             <th>Job Number</th>
-            <th style="min-width: 120px;">Need By</th>
+            <th style="min-width: 110px;">Need By</th>
             <th>View</th>
-            <th style="min-width: 160px;">Status</th>
+            <th style="min-width: 150px;">Status</th>
             <th>Assign Job</th>
             <th>Actions</th>
           </tr>
@@ -69,21 +41,19 @@
             <td data-label="Job Number">
               {{ r.job.number if r.job_id else r.job_number or '—' }}
             </td>
-            <td data-label="Need By" style="min-width: 120px;">
+            <td data-label="Need By" style="min-width: 110px;">
               {% if r.need_by_date %}
                 {{ r.need_by_date.strftime('%m/%d/%Y') }}
               {% else %}
                 —
               {% endif %}
             </td>
-            <td data-label="View">
+            <td data-label="View" class="text-nowrap">
               <a href="{{ url_for('admin.request_detail', req_id=r.id) }}"
                  class="btn btn-sm btn-dark">View</a>
               {% if r.files %}
               <a href="{{ url_for('admin.request_files', req_id=r.id) }}"
-                 class="btn btn-sm btn-outline-info" title="{{ r.files|length }} file(s)">
-                &#128206; {{ r.files|length }}
-              </a>
+                 class="btn btn-sm btn-dark">Files ({{ r.files|length }})</a>
               {% endif %}
             </td>
             <td data-label="Status">
@@ -92,9 +62,9 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <select name="status"
                         class="form-select form-select-sm
-                          {% if r.status=='Not started' %}bg-danger text-white
-                          {% elif r.status=='In progress' %}bg-warning text-dark
-                          {% elif r.status=='Complete' %}bg-success text-white
+                          {% if r.status=='Not started' %}bg-danger
+                          {% elif r.status=='In progress' %}bg-warning
+                          {% elif r.status=='Complete' %}bg-success
                           {% endif %}"
                         onchange="this.form.submit()">
                   <option value="Not started"
@@ -131,7 +101,7 @@
             </td>
             <td data-label="Actions" class="text-nowrap">
               <a href="{{ url_for('admin.edit_request', req_id=r.id) }}"
-                 class="btn btn-sm btn-outline-primary mb-1">Edit</a>
+                 class="btn btn-sm btn-outline-primary">Edit</a>
               <form method="post"
                     action="{{ url_for('admin.delete_request', req_id=r.id) }}"
                     class="d-inline"
