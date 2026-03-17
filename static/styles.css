@@ -426,12 +426,27 @@ input[required]:focus {
 
 /* -- Mobile Responsive Requests Table ----------------------- */
 @media (max-width: 767px) {
+  /* Kill the horizontal scroll wrapper on mobile */
+  .table-responsive {
+    overflow-x: visible !important;
+  }
+
+  #requests-table {
+    display: block;
+    width: 100% !important;
+    border: none;
+  }
+
   #requests-table thead { display: none; }
-  #requests-table, #requests-table tbody, #requests-table tr, #requests-table td {
+
+  #requests-table tbody {
     display: block;
     width: 100%;
   }
+
   #requests-table tr {
+    display: block;
+    width: 100%;
     margin-bottom: 1rem;
     border: 1px solid var(--gray-300);
     border-radius: var(--radius-md);
@@ -440,20 +455,30 @@ input[required]:focus {
     padding: 0;
     overflow: hidden;
   }
+
   #requests-table td {
+    display: block;
+    width: 100% !important;
+    min-width: unset !important;
+    max-width: 100%;
     padding: 0.6rem 0.75rem;
     text-align: right;
     position: relative;
     border: none;
     border-bottom: 1px solid var(--gray-200);
     background: #fff;
+    overflow: hidden;
+    word-wrap: break-word;
   }
+
   #requests-table td:nth-child(odd) {
     background: var(--gray-50);
   }
+
   #requests-table td:last-child {
     border-bottom: none;
   }
+
   #requests-table td:before {
     content: attr(data-label);
     float: left;
@@ -462,6 +487,17 @@ input[required]:focus {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+  }
+
+  /* Make dropdowns and buttons fit on mobile */
+  #requests-table .form-select {
+    font-size: 0.8rem;
+    max-width: 100%;
+  }
+
+  #requests-table .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
 }
 
