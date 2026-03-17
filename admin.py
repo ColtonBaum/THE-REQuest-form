@@ -238,7 +238,7 @@ def update_status(req_id):
 
 @admin_bp.route("/jobs")
 def jobs_list():
-    """Main jobs page: shows list of PMs to click into."""
+    """Main jobs page: PM cards + equipment search + All Jobs safety net."""
     pms = (
         ProjectManager.query
         .filter_by(is_active=True)
@@ -246,7 +246,6 @@ def jobs_list():
         .all()
     )
 
-    # Count active jobs per PM for the cards
     pm_data = []
     for pm in pms:
         active_count = (
@@ -277,10 +276,27 @@ def jobs_list():
             .all()
         )
 
+    # Show all/unassigned toggle
+    show_all = flask_req.args.get("show_all", "")
+
+    all_jobs = []
+    unassigned_jobs = []
+    if show_all:
+        all_jobs = (
+            Job.query
+            .filter_by(archived=False)
+            .order_by(Job.start_date.desc())
+            .all()
+        )
+        unassigned_jobs = [j for j in all_jobs if j.manager_id is None]
+
     return render_template("admin/jobs_list.html",
                            pm_data=pm_data,
                            search_query=search_query,
-                           search_results=search_results)
+                           search_results=search_results,
+                           show_all=show_all,
+                           all_jobs=all_jobs,
+                           unassigned_jobs=unassigned_jobs)
 
 
 @admin_bp.route("/jobs/pm/<int:pm_id>")
