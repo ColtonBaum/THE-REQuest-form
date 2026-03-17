@@ -17,9 +17,9 @@
             <th>Name</th>
             <th>Job Name</th>
             <th>Job Number</th>
-            <th style="min-width: 110px;">Need By</th>
+            <th>Need By</th>
             <th>View</th>
-            <th style="min-width: 150px;">Status</th>
+            <th>Status</th>
             <th>Assign Job</th>
             <th>Actions</th>
           </tr>
@@ -41,7 +41,7 @@
             <td data-label="Job Number">
               {{ r.job.number if r.job_id else r.job_number or '—' }}
             </td>
-            <td data-label="Need By" style="min-width: 110px;">
+            <td data-label="Need By">
               {% if r.need_by_date %}
                 {{ r.need_by_date.strftime('%m/%d/%Y') }}
               {% else %}

@@ -426,15 +426,28 @@ input[required]:focus {
 
 /* -- Mobile Responsive Requests Table ----------------------- */
 @media (max-width: 767px) {
+  /* Remove all wrapper padding that eats into width */
+  .container-fluid {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .card .card-body {
+    padding: 0.5rem !important;
+  }
+
   /* Kill the horizontal scroll wrapper on mobile */
   .table-responsive {
     overflow-x: visible !important;
+    overflow-y: visible !important;
   }
 
   #requests-table {
     display: block;
     width: 100% !important;
+    max-width: 100vw;
     border: none;
+    table-layout: fixed;
   }
 
   #requests-table thead { display: none; }
@@ -454,13 +467,14 @@ input[required]:focus {
     box-shadow: var(--shadow-md);
     padding: 0;
     overflow: hidden;
+    box-sizing: border-box;
   }
 
   #requests-table td {
-    display: block;
+    display: block !important;
     width: 100% !important;
-    min-width: unset !important;
-    max-width: 100%;
+    min-width: 0 !important;
+    max-width: 100% !important;
     padding: 0.6rem 0.75rem;
     text-align: right;
     position: relative;
@@ -469,6 +483,14 @@ input[required]:focus {
     background: #fff;
     overflow: hidden;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    box-sizing: border-box;
+  }
+
+  /* Override any inline min-width styles */
+  #requests-table td[style] {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   #requests-table td:nth-child(odd) {
@@ -493,11 +515,18 @@ input[required]:focus {
   #requests-table .form-select {
     font-size: 0.8rem;
     max-width: 100%;
+    box-sizing: border-box;
   }
 
   #requests-table .btn {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
+  }
+
+  /* Prevent the DataTables wrapper from overflowing */
+  .dataTables_wrapper {
+    overflow: hidden;
+    width: 100% !important;
   }
 }
 
