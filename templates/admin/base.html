@@ -49,9 +49,9 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link {% if request.path.startswith('/admin/assets') %}active{% endif %}"
-                 href="{{ url_for('admin.assets_list') }}">
-                Assets
+              <a class="nav-link {% if request.path.startswith('/admin/pms') %}active{% endif %}"
+                 href="{{ url_for('admin.pm_list') }}">
+                PMs
               </a>
             </li>
             <li class="nav-item">
