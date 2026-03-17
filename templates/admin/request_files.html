@@ -2,7 +2,7 @@
 {% block title %}Files — Request #{{ req.id }}{% endblock %}
 
 {% block admin_content %}
-<div class="container-fluid py-4">
+<div class="py-3">
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ url_for('admin.list_requests') }}">Requests</a></li>
@@ -11,57 +11,62 @@
         </ol>
     </nav>
 
-    <h3>Files for Request #{{ req.id }}</h3>
-    <p class="text-muted">
-        {{ req.employee_name }} — {{ req.job_name }} ({{ req.job_number }})
-    </p>
+    <div class="mb-4">
+        <h2 class="mb-1">Attachments</h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            {{ req.employee_name }} — {{ req.job_name }} ({{ req.job_number }})
+        </p>
+    </div>
 
     {% if req.files %}
     <div class="row">
         {% for f in req.files %}
-        <div class="col-md-4 col-sm-6 mb-3">
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
             <div class="card h-100">
                 {% if f.is_image %}
                 <a href="{{ url_for('admin.serve_upload', filename=f.filename) }}" target="_blank">
                     <img src="{{ url_for('admin.serve_upload', filename=f.filename) }}"
                          class="card-img-top"
-                         style="max-height: 250px; object-fit: contain; background: #f0f0f0; padding: 0.5rem;"
+                         style="height: 180px; object-fit: contain; background: var(--gray-50); padding: 0.5rem;"
                          alt="{{ f.original_filename }}">
                 </a>
                 {% else %}
-                <div class="card-img-top d-flex align-items-center justify-content-center"
-                     style="height: 120px; background: #f0f0f0;">
+                <div class="d-flex align-items-center justify-content-center"
+                     style="height: 120px; background: var(--gray-50);">
                     {% if f.is_excel %}
-                    <span style="font-size: 3rem; color: #217346;">&#128206;</span>
+                    <svg width="40" height="40" fill="none" stroke="#217346" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    </svg>
                     {% elif f.original_filename.endswith('.pdf') %}
-                    <span style="font-size: 3rem; color: #e74c3c;">&#128196;</span>
+                    <svg width="40" height="40" fill="none" stroke="#e74c3c" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    </svg>
                     {% else %}
-                    <span style="font-size: 3rem; color: #6c757d;">&#128196;</span>
+                    <svg width="40" height="40" fill="none" stroke="var(--gray-400)" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                    </svg>
                     {% endif %}
                 </div>
                 {% endif %}
 
-                <div class="card-body">
-                    <h6 class="card-title text-truncate" title="{{ f.original_filename }}">
+                <div class="card-body py-2 px-3">
+                    <div class="text-truncate fw-medium" style="font-size: 0.85rem;" title="{{ f.original_filename }}">
                         {{ f.original_filename }}
-                    </h6>
-                    <p class="card-text">
-                        <small class="text-muted">
-                            {% if f.file_size %}
-                                {% if f.file_size > 1048576 %}
-                                    {{ "%.1f"|format(f.file_size / 1048576) }} MB
-                                {% elif f.file_size > 1024 %}
-                                    {{ "%.0f"|format(f.file_size / 1024) }} KB
-                                {% else %}
-                                    {{ f.file_size }} bytes
-                                {% endif %}
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--gray-400);">
+                        {% if f.file_size %}
+                            {% if f.file_size > 1048576 %}
+                                {{ "%.1f"|format(f.file_size / 1048576) }} MB
+                            {% elif f.file_size > 1024 %}
+                                {{ "%.0f"|format(f.file_size / 1024) }} KB
+                            {% else %}
+                                {{ f.file_size }} bytes
                             {% endif %}
-                            &middot;
-                            {{ f.uploaded_at.strftime('%m/%d/%Y %I:%M %p') if f.uploaded_at else '' }}
-                        </small>
-                    </p>
+                        {% endif %}
+                    </div>
                     <a href="{{ url_for('admin.serve_upload', filename=f.filename) }}"
-                       class="btn btn-sm btn-outline-primary" download="{{ f.original_filename }}">
+                       class="btn btn-sm btn-outline-primary mt-2 w-100"
+                       download="{{ f.original_filename }}">
                         Download
                     </a>
                 </div>
@@ -70,8 +75,10 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="alert alert-info">
-        No files were attached to this request.
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="text-muted">No files attached to this request.</div>
+        </div>
     </div>
     {% endif %}
 </div>

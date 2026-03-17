@@ -4,38 +4,29 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Admin Console{% endblock %}</title>
-    <!-- Bootswatch Flatly (Bootstrap v5) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.5/dist/flatly/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Bootstrap 5 (clean base, we override in styles.css) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <!-- Our theme -->
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-      body {
-        background-color: #f8f9fa;
-      }
-      .card {
-        border-radius: 1rem;
-        box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
-      }
-      .pm-box {
-        border: 1px solid #ced4da;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
-        background-color: #ffffff;
-        margin-bottom: 1rem;
-      }
-    </style>
   </head>
-  <body class="bg-light">
+  <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
       <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('admin.jobs_list') }}">Admin Console</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav">
+        <a class="navbar-brand" href="{{ url_for('admin.list_requests') }}">
+          ToolTrack
+        </a>
+        <button class="navbar-toggler" type="button"
+                data-bs-toggle="collapse" data-bs-target="#adminNav"
+                aria-controls="adminNav" aria-expanded="false">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="adminNav">
-          <ul class="navbar-nav ms-auto">
+          <ul class="navbar-nav ms-auto gap-1">
             <li class="nav-item">
               <a class="nav-link {% if request.path.startswith('/admin/requests') %}active{% endif %}"
                  href="{{ url_for('admin.list_requests') }}">
@@ -43,15 +34,9 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link {% if request.path.startswith('/admin/jobs') %}active{% endif %}"
+              <a class="nav-link {% if request.path.startswith('/admin/jobs') or request.path.startswith('/admin/pms') %}active{% endif %}"
                  href="{{ url_for('admin.jobs_list') }}">
                 Jobs
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link {% if request.path.startswith('/admin/pms') %}active{% endif %}"
-                 href="{{ url_for('admin.pm_list') }}">
-                PMs
               </a>
             </li>
             <li class="nav-item">
@@ -65,7 +50,7 @@
       </div>
     </nav>
 
-    <div class="container">
+    <div class="container-fluid px-3 px-md-4">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, msg in messages %}
@@ -80,14 +65,14 @@
       {% block admin_content %}{% endblock %}
     </div>
 
-    <!-- Core scripts -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
     <script>
       $(function(){
-        $('#requests-table, #jobs-table, #assets-table').DataTable({
+        $('#requests-table, #jobs-table').DataTable({
           paging:     true,
           searching:  true,
           ordering:   true,

@@ -2,38 +2,44 @@
 {% block title %}Jobs{% endblock %}
 
 {% block admin_content %}
-<div class="container-fluid py-4">
+<div class="py-3">
+    <!-- Header with action buttons -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Jobs</h2>
+        <h2 class="mb-0">Jobs</h2>
         <div class="d-flex gap-2">
             {% if show_all %}
-            <a href="{{ url_for('admin.jobs_list') }}" class="btn btn-outline-secondary">Hide All Jobs</a>
+            <a href="{{ url_for('admin.jobs_list') }}" class="btn btn-outline-secondary btn-sm">Hide All</a>
             {% else %}
-            <a href="{{ url_for('admin.jobs_list', show_all='1') }}" class="btn btn-outline-secondary">Show All Jobs</a>
+            <a href="{{ url_for('admin.jobs_list', show_all='1') }}" class="btn btn-outline-secondary btn-sm">Show All Jobs</a>
             {% endif %}
-            <a href="{{ url_for('admin.new_job') }}" class="btn btn-primary">+ New Job</a>
+            <a href="{{ url_for('admin.pm_list') }}" class="btn btn-outline-secondary btn-sm">Manage PMs</a>
+            <a href="{{ url_for('admin.new_job') }}" class="btn btn-primary btn-sm">+ New Job</a>
         </div>
     </div>
 
     <!-- Equipment Search -->
     <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Search Equipment / Serial Numbers</h5>
-            <form method="GET" action="{{ url_for('admin.jobs_list') }}" class="row g-2 align-items-end">
+        <div class="card-body py-3">
+            <form method="GET" action="{{ url_for('admin.jobs_list') }}" class="row g-2 align-items-center">
                 {% if show_all %}
                 <input type="hidden" name="show_all" value="1">
                 {% endif %}
-                <div class="col-md-8 col-sm-12">
-                    <input type="text" name="q" class="form-control"
-                           placeholder="Search by serial number, identifier, or category..."
-                           value="{{ search_query }}">
+                <div class="col">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        </span>
+                        <input type="text" name="q" class="form-control border-start-0"
+                               placeholder="Search equipment by serial number, identifier, or category..."
+                               value="{{ search_query }}">
+                    </div>
                 </div>
                 <div class="col-auto">
-                    <button type="submit" class="btn btn-outline-secondary">Search</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Search</button>
                 </div>
                 {% if search_query %}
                 <div class="col-auto">
-                    <a href="{{ url_for('admin.jobs_list', show_all=show_all) }}" class="btn btn-outline-danger">Clear</a>
+                    <a href="{{ url_for('admin.jobs_list', show_all=show_all) }}" class="btn btn-outline-danger btn-sm">Clear</a>
                 </div>
                 {% endif %}
             </form>
@@ -44,13 +50,13 @@
     {% if search_query %}
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title">
-                Results for "{{ search_query }}"
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <h6 class="mb-0">Results for "{{ search_query }}"</h6>
                 <span class="badge bg-secondary">{{ search_results|length }}</span>
-            </h5>
+            </div>
             {% if search_results %}
             <div class="table-responsive">
-                <table class="table table-sm table-hover">
+                <table class="table table-sm table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Category</th>
@@ -64,7 +70,7 @@
                         <tr>
                             <td>{{ asset.group }}</td>
                             <td>{{ asset.identifier }}</td>
-                            <td><code>{{ asset.serial_number }}</code></td>
+                            <td><code style="color: var(--slate); background: var(--gray-100); padding: 0.15em 0.4em; border-radius: 3px;">{{ asset.serial_number }}</code></td>
                             <td>
                                 {% if asset.current_job %}
                                     <a href="{{ url_for('admin.job_detail', job_id=asset.current_job.id) }}">
@@ -80,7 +86,7 @@
                 </table>
             </div>
             {% else %}
-            <p class="text-muted mb-0">No equipment found matching "{{ search_query }}".</p>
+            <p class="text-muted mb-0">No equipment found.</p>
             {% endif %}
         </div>
     </div>
@@ -89,8 +95,10 @@
     <!-- Unassigned Jobs Warning -->
     {% if show_all and unassigned_jobs %}
     <div class="alert alert-warning mb-4">
-        <h6 class="alert-heading">Jobs without a Project Manager ({{ unassigned_jobs|length }})</h6>
-        <p class="mb-2">These jobs need to be assigned to a PM:</p>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <strong>Unassigned Jobs</strong>
+            <span class="badge bg-warning">{{ unassigned_jobs|length }}</span>
+        </div>
         <div class="table-responsive">
             <table class="table table-sm mb-0">
                 <thead>
@@ -98,23 +106,16 @@
                         <th>Job Name</th>
                         <th>Job Number</th>
                         <th>Old Manager</th>
-                        <th>Action</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for job in unassigned_jobs %}
                     <tr>
-                        <td>
-                            <a href="{{ url_for('admin.job_detail', job_id=job.id) }}">
-                                {{ job.name }}
-                            </a>
-                        </td>
+                        <td><a href="{{ url_for('admin.job_detail', job_id=job.id) }}">{{ job.name }}</a></td>
                         <td>{{ job.number }}</td>
                         <td>{{ job.manager or '—' }}</td>
-                        <td>
-                            <a href="{{ url_for('admin.edit_job', job_id=job.id) }}"
-                               class="btn btn-sm btn-outline-primary">Assign PM</a>
-                        </td>
+                        <td><a href="{{ url_for('admin.edit_job', job_id=job.id) }}" class="btn btn-sm btn-outline-primary">Assign PM</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -124,33 +125,34 @@
     {% endif %}
 
     <!-- PM Cards -->
-    <h5 class="mb-3">Project Managers</h5>
     <div class="row">
         {% for item in pm_data %}
-        <div class="col-md-4 col-sm-6 mb-3">
-            <a href="{{ url_for('admin.pm_jobs', pm_id=item.pm.id) }}"
-               class="card text-decoration-none h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
+        <div class="col-lg-3 col-md-4 col-sm-6 mb-3">
+            <a href="{{ url_for('admin.pm_jobs', pm_id=item.pm.id) }}" class="card h-100">
+                <div class="card-body py-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title mb-1">{{ item.pm.name }}</h5>
-                        <p class="card-text text-muted mb-0">
+                        <div class="fw-semibold" style="font-size: 0.95rem;">{{ item.pm.name }}</div>
+                        <div class="text-muted" style="font-size: 0.8rem;">
                             {{ item.active_jobs }} active job{{ 's' if item.active_jobs != 1 }}
-                        </p>
+                        </div>
                     </div>
-                    <span class="text-muted fs-4">&rsaquo;</span>
+                    <svg width="20" height="20" fill="none" stroke="var(--gray-400)" stroke-width="2" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                 </div>
             </a>
         </div>
         {% endfor %}
     </div>
 
-    <!-- All Jobs Table (when toggled) -->
+    <!-- All Jobs Table -->
     {% if show_all and all_jobs %}
-    <div class="card mt-4">
+    <div class="card mt-3">
         <div class="card-body">
-            <h5 class="card-title">All Active Jobs <span class="badge bg-secondary">{{ all_jobs|length }}</span></h5>
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <h6 class="mb-0">All Active Jobs</h6>
+                <span class="badge bg-secondary">{{ all_jobs|length }}</span>
+            </div>
             <div class="table-responsive">
-                <table class="table table-sm table-hover">
+                <table class="table table-sm table-hover mb-0">
                     <thead>
                         <tr>
                             <th>Job Name</th>
@@ -163,11 +165,7 @@
                     <tbody>
                         {% for job in all_jobs %}
                         <tr>
-                            <td>
-                                <a href="{{ url_for('admin.job_detail', job_id=job.id) }}">
-                                    {{ job.name }}
-                                </a>
-                            </td>
+                            <td><a href="{{ url_for('admin.job_detail', job_id=job.id) }}">{{ job.name }}</a></td>
                             <td>{{ job.number }}</td>
                             <td>{{ job.pm.name if job.pm else (job.manager or '—') }}</td>
                             <td>{{ job.start_date.strftime('%m/%d/%Y') if job.start_date else '' }}</td>
@@ -176,10 +174,8 @@
                                     <span class="badge bg-secondary">{{ job.status }}</span>
                                 {% elif job.status == 'In progress' %}
                                     <span class="badge bg-primary">{{ job.status }}</span>
-                                {% elif job.status == 'Complete' %}
-                                    <span class="badge bg-success">{{ job.status }}</span>
                                 {% else %}
-                                    <span class="badge bg-light text-dark">{{ job.status }}</span>
+                                    <span class="badge bg-success">{{ job.status }}</span>
                                 {% endif %}
                             </td>
                         </tr>
