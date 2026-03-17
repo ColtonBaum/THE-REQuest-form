@@ -79,6 +79,12 @@
             <td data-label="View">
               <a href="{{ url_for('admin.request_detail', req_id=r.id) }}"
                  class="btn btn-sm btn-dark">View</a>
+              {% if r.files %}
+              <a href="{{ url_for('admin.request_files', req_id=r.id) }}"
+                 class="btn btn-sm btn-outline-info" title="{{ r.files|length }} file(s)">
+                &#128206; {{ r.files|length }}
+              </a>
+              {% endif %}
             </td>
             <td data-label="Status">
               <form method="post"

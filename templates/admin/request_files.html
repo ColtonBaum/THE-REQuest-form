@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% block title %}Files — Request #{{ req.id }}{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.list_requests') }}">Requests</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.request_detail', req_id=req.id) }}">#{{ req.id }}</a></li>
+            <li class="breadcrumb-item active">Files</li>
+        </ol>
+    </nav>
+
+    <h3>Files for Request #{{ req.id }}</h3>
+    <p class="text-muted">
+        {{ req.employee_name }} — {{ req.job_name }} ({{ req.job_number }})
+    </p>
+
+    {% if req.files %}
+    <div class="row">
+        {% for f in req.files %}
+        <div class="col-md-4 col-sm-6 mb-3">
+            <div class="card h-100">
+                {% if f.is_image %}
+                <a href="{{ url_for('admin.serve_upload', filename=f.filename) }}" target="_blank">
+                    <img src="{{ url_for('admin.serve_upload', filename=f.filename) }}"
+                         class="card-img-top"
+                         style="max-height: 250px; object-fit: contain; background: #f0f0f0; padding: 0.5rem;"
+                         alt="{{ f.original_filename }}">
+                </a>
+                {% else %}
+                <div class="card-img-top d-flex align-items-center justify-content-center"
+                     style="height: 120px; background: #f0f0f0;">
+                    {% if f.is_excel %}
+                    <span style="font-size: 3rem; color: #217346;">&#128206;</span>
+                    {% elif f.original_filename.endswith('.pdf') %}
+                    <span style="font-size: 3rem; color: #e74c3c;">&#128196;</span>
+                    {% else %}
+                    <span style="font-size: 3rem; color: #6c757d;">&#128196;</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <h6 class="card-title text-truncate" title="{{ f.original_filename }}">
+                        {{ f.original_filename }}
+                    </h6>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            {% if f.file_size %}
+                                {% if f.file_size > 1048576 %}
+                                    {{ "%.1f"|format(f.file_size / 1048576) }} MB
+                                {% elif f.file_size > 1024 %}
+                                    {{ "%.0f"|format(f.file_size / 1024) }} KB
+                                {% else %}
+                                    {{ f.file_size }} bytes
+                                {% endif %}
+                            {% endif %}
+                            &middot;
+                            {{ f.uploaded_at.strftime('%m/%d/%Y %I:%M %p') if f.uploaded_at else '' }}
+                        </small>
+                    </p>
+                    <a href="{{ url_for('admin.serve_upload', filename=f.filename) }}"
+                       class="btn btn-sm btn-outline-primary" download="{{ f.original_filename }}">
+                        Download
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No files were attached to this request.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

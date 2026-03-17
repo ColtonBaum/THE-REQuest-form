@@ -6,7 +6,7 @@
   <div class="card mx-auto" style="max-width:600px;">
     <div class="card-body">
       <h4 class="card-title text-center mb-4">Tooling/Trailer Request</h4>
-      <form method="post" autocomplete="off">
+      <form method="post" enctype="multipart/form-data" autocomplete="off">
         {{ form.hidden_tag() }}
 
         <div class="mb-3">
@@ -53,6 +53,16 @@
         <div class="mb-3 mt-4">
           {{ form.notes.label(class="form-label") }}
           {{ form.notes(class="form-control") }}
+        </div>
+
+        <div class="mb-3 mt-4">
+          <label class="form-label">Attach Files <small class="text-muted">(optional)</small></label>
+          <input type="file" name="attachments" class="form-control" multiple
+                 accept=".png,.jpg,.jpeg,.gif,.heic,.webp,.xlsx,.xls,.csv,.pdf,.doc,.docx">
+          <div class="form-text">
+            Upload photos, Excel files, or documents. Max 10 files, 10 MB each.
+            Accepted: images, Excel, CSV, PDF, Word docs.
+          </div>
         </div>
 
         <div class="text-center mt-4">

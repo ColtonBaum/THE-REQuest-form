@@ -88,6 +88,10 @@ class Request(db.Model):
     items = db.relationship(
         'RequestItem', backref='request', cascade='all, delete-orphan'
     )
+    files = db.relationship(
+        'RequestFile', backref='request', cascade='all, delete-orphan',
+        order_by='RequestFile.uploaded_at'
+    )
 
     @property
     def status_sort_key(self):
@@ -101,6 +105,29 @@ class RequestItem(db.Model):
     item_name  = db.Column(db.String(200), nullable=True)
     quantity   = db.Column(db.Integer, nullable=True)
     unit_price = db.Column(db.Numeric(10, 2), nullable=True)
+
+
+class RequestFile(db.Model):
+    __tablename__ = 'request_file'
+    id                = db.Column(db.Integer, primary_key=True)
+    request_id        = db.Column(db.Integer, db.ForeignKey('request.id', ondelete='CASCADE'), nullable=False)
+    filename          = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    content_type      = db.Column(db.String(100), nullable=True)
+    file_size         = db.Column(db.Integer, nullable=True)
+    uploaded_at       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def is_image(self):
+        return self.content_type and self.content_type.startswith('image/')
+
+    @property
+    def is_excel(self):
+        return self.original_filename and (
+            self.original_filename.endswith('.xlsx') or
+            self.original_filename.endswith('.xls') or
+            self.original_filename.endswith('.csv')
+        )
 
 
 # ---------------------------------------------------------------------------

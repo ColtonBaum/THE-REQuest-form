@@ -43,6 +43,15 @@
         </div>
       {% endif %}
 
+      {% if req.files %}
+      <div class="mt-3">
+        <a href="{{ url_for('admin.request_files', req_id=req.id) }}"
+           class="btn btn-sm btn-outline-info">
+          &#128206; {{ req.files|length }} file{{ 's' if req.files|length != 1 }}
+        </a>
+      </div>
+      {% endif %}
+
       <h5 class="mt-4">Requested Items</h5>
       <table class="table table-bordered table-sm align-middle">
         <thead class="table-light">

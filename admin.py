@@ -1,14 +1,16 @@
 import csv
 import io
+import os
 
 from flask import (
     Blueprint, render_template, request as flask_req,
-    redirect, url_for, flash, make_response, current_app, jsonify
+    redirect, url_for, flash, make_response, current_app, jsonify,
+    send_from_directory
 )
 from sqlalchemy import and_, not_, case, or_
 from sqlalchemy.orm import joinedload
 from datetime import datetime
-from models import db, Request, Job, Asset, RequestItem, ProjectManager, AssetAssignment, STATUS_SORT_ORDER
+from models import db, Request, Job, Asset, RequestItem, ProjectManager, AssetAssignment, RequestFile, STATUS_SORT_ORDER
 from forms import JobForm, AssetForm, RequestForm, ProjectManagerForm
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -589,6 +591,24 @@ def unassign_asset(asset_id):
     asset.current_job_id = None
     db.session.commit()
     return redirect(flask_req.referrer)
+
+
+# ===========================================================================
+# FILE UPLOADS
+# ===========================================================================
+
+@admin_bp.route("/requests/<int:req_id>/files")
+def request_files(req_id):
+    """View all files attached to a request."""
+    req = Request.query.get_or_404(req_id)
+    return render_template("admin/request_files.html", req=req)
+
+
+@admin_bp.route("/uploads/<filename>")
+def serve_upload(filename):
+    """Serve an uploaded file."""
+    upload_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    return send_from_directory(upload_dir, filename)
 
 
 # ===========================================================================

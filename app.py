@@ -57,6 +57,7 @@ app.config.update(
         "SQLALCHEMY_DATABASE_URI": db_uri,
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         "SQLALCHEMY_ENGINE_OPTIONS": engine_options,
+        "UPLOAD_FOLDER": os.path.join(os.path.dirname(__file__), "uploads"),
     }
 )
 
