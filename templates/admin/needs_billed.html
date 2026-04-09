@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+{% block title %}Needs to be Billed{% endblock %}
+
+{% block admin_content %}
+<div class="py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">Needs to be Billed</h2>
+      <p class="text-muted mb-0" style="font-size: 0.875rem;">
+        Completed requests waiting to be assigned to a job and billed.
+      </p>
+    </div>
+    <span class="badge bg-warning" style="font-size: 0.95rem; padding: 0.5em 0.85em;">
+      {{ requests|length }} pending
+    </span>
+  </div>
+
+  {% if requests %}
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Job Name</th>
+            <th>Job #</th>
+            <th>Need By</th>
+            <th>Items</th>
+            <th>Notes</th>
+            <th>Assign to Job</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in requests %}
+          <tr>
+            <td>
+              <a href="{{ url_for('admin.request_detail', req_id=r.id) }}"
+                 class="fw-medium">#{{ r.id }}</a>
+            </td>
+            <td>{{ r.employee_name }}</td>
+            <td>{{ r.job_name }}</td>
+            <td>{{ r.job_number }}</td>
+            <td>
+              {% if r.need_by_date %}
+                {{ r.need_by_date.strftime('%m/%d/%Y') }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td style="max-width: 200px;">
+              <div style="font-size: 0.8rem;">
+                {% for item in r.items %}
+                  <div>{{ item.item_name or 'Unnamed' }}
+                    {% if item.quantity %}<span class="text-muted">× {{ item.quantity }}</span>{% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </td>
+            <td style="max-width: 180px;">
+              <div style="font-size: 0.8rem; color: var(--gray-500);">
+                {{ r.notes or '—' }}
+              </div>
+            </td>
+            <td style="min-width: 200px;">
+              <form method="post"
+                    action="{{ url_for('admin.assign_request', req_id=r.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="input-group input-group-sm">
+                  <select name="job_id" class="form-select form-select-sm">
+                    <option value="">— Unassigned —</option>
+                    {% for j in jobs %}
+                    <option value="{{ j.id }}"
+                            {% if r.job_id == j.id %}selected{% endif %}>
+                      {{ j.name }} ({{ j.number }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">Set</button>
+                </div>
+              </form>
+              <div class="mt-1">
+                <a href="{{ url_for('admin.new_job') }}"
+                   class="btn btn-sm btn-outline-primary w-100"
+                   style="font-size: 0.75rem;">
+                  + New Job
+                </a>
+              </div>
+            </td>
+            <td class="text-nowrap">
+              <form method="post"
+                    action="{{ url_for('admin.mark_billed', req_id=r.id) }}"
+                    class="d-inline"
+                    onsubmit="return confirm('Mark request #{{ r.id }} as Billed?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-success">
+                  Mark Billed
+                </button>
+              </form>
+              <form method="post"
+                    action="{{ url_for('admin.update_status', req_id=r.id) }}"
+                    class="d-inline mt-1">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="In progress">
+                <button type="submit" class="btn btn-sm btn-outline-secondary"
+                        title="Send back to active requests">
+                  Reopen
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <div style="font-size: 2rem; margin-bottom: 0.75rem;">✓</div>
+      <h5 class="mb-1">All caught up</h5>
+      <p class="text-muted mb-0">No completed requests waiting to be billed.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

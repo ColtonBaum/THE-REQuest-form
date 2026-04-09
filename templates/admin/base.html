@@ -40,9 +40,9 @@
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link {% if request.path.startswith('/admin/reports') %}active{% endif %}"
-                 href="{{ url_for('admin.reports') }}">
-                Reports
+              <a class="nav-link {% if request.path.startswith('/admin/billing') %}active{% endif %}"
+                 href="{{ url_for('admin.needs_billed') }}">
+                Needs to be Billed
               </a>
             </li>
           </ul>

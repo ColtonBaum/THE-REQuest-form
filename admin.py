@@ -43,14 +43,7 @@ def list_requests():
 
     all_reqs = (
         Request.query
-        .filter(
-            not_(
-                and_(
-                    Request.status == "Complete",
-                    Request.job_id.isnot(None),
-                )
-            )
-        )
+        .filter(Request.status.notin_(["Complete", "Billed"]))
         .order_by(status_order, Request.submitted_at.desc())
         .all()
     )
@@ -127,7 +120,7 @@ def assign_request(req_id):
     req.job_id = int(job_id) if job_id else None
     db.session.commit()
     flash(f"Request #{req_id} assigned.", "success")
-    return redirect(url_for("admin.list_requests"))
+    return redirect(flask_req.referrer or url_for("admin.list_requests"))
 
 
 @admin_bp.route("/requests/<int:req_id>/fulfill", methods=["GET", "POST"])
@@ -227,11 +220,11 @@ def export_csv():
 def update_status(req_id):
     req = Request.query.get_or_404(req_id)
     new = flask_req.form.get("status")
-    if new in ["Not started", "In progress", "Complete"]:
+    if new in ["Not started", "In progress", "Complete", "Billed"]:
         req.status = new
         db.session.commit()
         flash(f"Request #{req_id} set to \u201c{new}\u201d.", "success")
-    return redirect(url_for("admin.list_requests"))
+    return redirect(flask_req.referrer or url_for("admin.list_requests"))
 
 
 # ===========================================================================
@@ -609,6 +602,46 @@ def serve_upload(filename):
     """Serve an uploaded file."""
     upload_dir = current_app.config.get('UPLOAD_FOLDER', 'uploads')
     return send_from_directory(upload_dir, filename)
+
+
+# ===========================================================================
+# NEEDS TO BE BILLED
+# ===========================================================================
+
+@admin_bp.route("/billing")
+def needs_billed():
+    """Completed requests waiting to be billed / assigned to a job."""
+    completed = (
+        Request.query
+        .filter_by(status="Complete")
+        .order_by(Request.submitted_at.desc())
+        .all()
+    )
+    jobs = (
+        Job.query
+        .filter_by(archived=False)
+        .order_by(Job.start_date.desc())
+        .all()
+    )
+    pms = (
+        ProjectManager.query
+        .filter_by(is_active=True)
+        .order_by(ProjectManager.display_order, ProjectManager.name)
+        .all()
+    )
+    return render_template("admin/needs_billed.html",
+                           requests=completed,
+                           jobs=jobs,
+                           pms=pms)
+
+
+@admin_bp.route("/requests/<int:req_id>/mark_billed", methods=["POST"])
+def mark_billed(req_id):
+    req = Request.query.get_or_404(req_id)
+    req.status = "Billed"
+    db.session.commit()
+    flash(f"Request #{req_id} marked as Billed.", "success")
+    return redirect(url_for("admin.needs_billed"))
 
 
 # ===========================================================================
