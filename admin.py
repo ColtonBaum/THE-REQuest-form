@@ -614,6 +614,7 @@ def needs_billed():
     completed = (
         Request.query
         .filter_by(status="Complete")
+        .filter(Request.job_id.is_(None))
         .order_by(Request.submitted_at.desc())
         .all()
     )
